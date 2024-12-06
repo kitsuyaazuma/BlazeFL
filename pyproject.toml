@@ -1,0 +1,17 @@
+[project]
+name = "blazefl"
+version = "0.1.0a1"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "kitsuya0828", email = "kitsuyaazuma@gmail.com" }
+]
+requires-python = ">=3.12"
+dependencies = [
+  "torch>=2.5.1",
+  "torchvision>=0.20.1",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
