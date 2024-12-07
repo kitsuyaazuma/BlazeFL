@@ -4,6 +4,7 @@ import random
 from dataclasses import dataclass
 import torch.multiprocessing as mp
 from pathlib import Path
+from tqdm import tqdm
 
 from blazefl.core import (
     ServerHandler,
@@ -52,6 +53,9 @@ class FedAvgServerHandler(ServerHandler):
 
         return sorted(sampled_clients)
 
+    def if_stop(self) -> bool:
+        return self.round >= self.global_round
+
     def load(self, payload: FedAvgPackage) -> bool:
         self.client_buffer_cache.append(payload)
 
@@ -81,6 +85,10 @@ class FedAvgServerHandler(ServerHandler):
 
         return serialized_parameters
 
+    def downlink_package(self) -> FedAvgPackage:
+        model_parameters = serialize_model(self.model)
+        return FedAvgPackage(model_parameters, 0)
+
 
 class FedAvgSerialClientTrainer(SerialClientTrainer):
     def __init__(
@@ -107,7 +115,7 @@ class FedAvgSerialClientTrainer(SerialClientTrainer):
 
     def local_process(self, payload: FedAvgPackage, cid_list: list[int]):
         model_parameters = payload.model_parameters
-        for cid in cid_list:
+        for cid in tqdm(cid_list, desc="Client", leave=False):
             data_loader = self.dataset.get_dataloader(
                 type_="train", cid=cid, batch_size=self.batch_size
             )

@@ -10,6 +10,9 @@ class ServerHandler(ABC):
     def sample_clients(self) -> list[int]: ...
 
     @abstractmethod
+    def if_stop(self) -> bool: ...
+
+    @abstractmethod
     def global_update(self, buffer: list[Any]) -> None: ...
 
     @abstractmethod
