@@ -18,7 +18,7 @@ class ParallelClientTrainer(ABC):
     @abstractmethod
     def uplink_package(self) -> list[Any]: ...
 
-    @abstractmethod
+    # @abstractmethod
     def get_client_worker(self, M, D) -> Callable[[M, D], tuple[M, D]]: ...
 
     @abstractmethod

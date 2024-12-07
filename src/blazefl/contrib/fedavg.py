@@ -166,6 +166,7 @@ class FedAvgParalleClientTrainer(ParallelClientTrainer):
         self.model_selector = model_selector
         self.model_name = model_name
         self.tmp_dir = tmp_dir
+        self.tmp_dir.mkdir(parents=True, exist_ok=True)
         self.dataset = dataset
         self.device = device
         self.num_clients = num_clients
@@ -180,7 +181,7 @@ class FedAvgParalleClientTrainer(ParallelClientTrainer):
 
     @staticmethod
     def process_client(memory_parameters: dict, disk_path: Path) -> tuple[dict, Path]:
-        disk_parameters = get_shared_disk(disk_path)["model_parameters"]
+        disk_parameters = get_shared_disk(disk_path)
         model_parameters = disk_parameters["model_parameters"]
         model_selector = memory_parameters["model_selector"]
         model_name = memory_parameters["model_name"]
@@ -223,9 +224,6 @@ class FedAvgParalleClientTrainer(ParallelClientTrainer):
         disk_parameters = {
             "model_parameters": model_parameters,
         }
-        disk_path = memory_parameters["disk_path"].joinpath(
-            f"{memory_parameters['cid']}.pt"
-        )
         set_shared_disk(disk_parameters, disk_path)
         set_shared_memory(memory_parameters)
 
@@ -234,7 +232,14 @@ class FedAvgParalleClientTrainer(ParallelClientTrainer):
     def local_process(self, payload: FedAvgPackage, cid_list: list[int]):
         model_parameters = payload.model_parameters
 
-        common_memory_parameters = {}
+        common_memory_parameters = {
+            "model_selector": self.model_selector,
+            "model_name": self.model_name,
+            "dataset": self.dataset,
+            "epochs": self.epochs,
+            "batch_size": self.batch_size,
+            "lr": self.lr,
+        }
         disk_parameters = {
             "model_parameters": model_parameters,
         }
@@ -243,6 +248,7 @@ class FedAvgParalleClientTrainer(ParallelClientTrainer):
         jobs = []
         for cid in cid_list:
             memory_parameters = common_memory_parameters.copy()
+            memory_parameters["cid"] = cid
             memory_parameters["device"] = (
                 f"cuda:{self.device_count % self.num_clients}"
                 if self.device == "cuda"
@@ -261,7 +267,7 @@ class FedAvgParalleClientTrainer(ParallelClientTrainer):
                 )
             )
 
-        for job in jobs:
+        for job in tqdm(jobs, desc="Client", leave=False):
             memory_parameters, disk_path = job.get()
             disk_parameters = torch.load(disk_path, weights_only=False)
             self.cache.append(
