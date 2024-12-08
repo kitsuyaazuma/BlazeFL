@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
-from torch.utils.data import Dataset, DataLoader
-from typing import Optional
+
+from torch.utils.data import DataLoader, Dataset
 
 
 class PartitionedDataset(ABC):
@@ -8,9 +8,9 @@ class PartitionedDataset(ABC):
     def preprocess(self) -> None: ...
 
     @abstractmethod
-    def get_dataset(self, type_: str, cid: Optional[int]) -> Dataset: ...
+    def get_dataset(self, type_: str, cid: int | None) -> Dataset: ...
 
     @abstractmethod
     def get_dataloader(
-        self, type_: str, cid: Optional[int], batch_size: Optional[int]
+        self, type_: str, cid: int | None, batch_size: int | None
     ) -> DataLoader: ...

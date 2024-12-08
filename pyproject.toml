@@ -8,11 +8,31 @@ authors = [
 ]
 requires-python = ">=3.12"
 dependencies = [
+  "pydantic>=2.10.3",
   "torch>=2.5.1",
   "torchvision>=0.20.1",
   "tqdm>=4.67.1",
+  "types-tqdm>=4.67.0.20241119",
 ]
 
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
+
+[dependency-groups]
+dev = [
+    "mypy>=1.13.0",
+    "ruff>=0.8.2",
+]
+
+[tool.ruff.lint]
+select = [
+    "E",  # pycodestyle
+    "F",  # Pyflakes
+    "UP",  # pyupgrade
+    "B",  # flake8-bugbear
+    "SIM",  # flake8-simplify
+    "I",  # isort
+]
+ignore = []
+fixable = ["ALL"]

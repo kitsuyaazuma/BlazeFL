@@ -1,7 +1,7 @@
 from blazefl.contrib.fedavg import (
-    FedAvgServerHandler,
     FedAvgParalleClientTrainer,
     FedAvgSerialClientTrainer,
+    FedAvgServerHandler,
 )
 
 __all__ = [
