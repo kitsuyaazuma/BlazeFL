@@ -12,9 +12,10 @@ from blazefl.core import (
     PartitionedDataset,
     SerialClientTrainer,
     ParallelClientTrainer,
+    SharedData,
 )
+from blazefl.core.shared_data import ShareMethod
 from blazefl.utils.serialize import serialize_model, deserialize_model
-from blazefl.utils.share import set_shared_memory, set_shared_disk, get_shared_disk
 
 
 @dataclass
@@ -163,16 +164,18 @@ class FedAvgParalleClientTrainer(ParallelClientTrainer):
         lr: float,
         num_parallels: int,
     ) -> None:
-        self.model_selector = model_selector
-        self.model_name = model_name
+        self.config = {
+            "model_selector": model_selector,
+            "model_name": model_name,
+            "dataset": dataset,
+            "epochs": epochs,
+            "batch_size": batch_size,
+            "lr": lr,
+        }
         self.tmp_dir = tmp_dir
         self.tmp_dir.mkdir(parents=True, exist_ok=True)
-        self.dataset = dataset
         self.device = device
         self.num_clients = num_clients
-        self.epochs = epochs
-        self.batch_size = batch_size
-        self.lr = lr
         self.num_parallels = num_parallels
 
         self.cache: list[FedAvgPackage] = []
@@ -180,31 +183,24 @@ class FedAvgParalleClientTrainer(ParallelClientTrainer):
             self.device_count = torch.cuda.device_count()
 
     @staticmethod
-    def process_client(memory_parameters: dict, disk_path: Path) -> tuple[dict, Path]:
-        disk_parameters = get_shared_disk(disk_path)
-        model_parameters = disk_parameters["model_parameters"]
-        model_selector = memory_parameters["model_selector"]
-        model_name = memory_parameters["model_name"]
-        model = model_selector.select_model(model_name)
-        device = memory_parameters["device"]
-        dataset = memory_parameters["dataset"]
-        epochs, batch_size, lr = (
-            memory_parameters["epochs"],
-            memory_parameters["batch_size"],
-            memory_parameters["lr"],
-        )
+    def process_client(shared_data: SharedData) -> SharedData:
+        data = shared_data.get_all()
+        config = data["config"]
+        model = config["model_selector"].select_model(config["model_name"])
+        device = data["device"]
+        dataset = config["dataset"]
 
-        deserialize_model(model, model_parameters)
+        deserialize_model(model, data["model_parameters"])
         model.to(device)
         model.train()
         train_loader = dataset.get_dataloader(
-            type_="train", cid=memory_parameters["cid"], batch_size=batch_size
+            type_="train", cid=data["cid"], batch_size=config["batch_size"]
         )
         criterion = torch.nn.CrossEntropyLoss()
-        optimizer = torch.optim.SGD(model.parameters(), lr=lr)
+        optimizer = torch.optim.SGD(model.parameters(), lr=config["lr"])
 
         data_size = 0
-        for _ in range(epochs):
+        for _ in range(config["epochs"]):
             for data, target in train_loader:
                 data.to(device)
                 target.to(device)
@@ -220,61 +216,43 @@ class FedAvgParalleClientTrainer(ParallelClientTrainer):
 
         model_parameters = serialize_model(model)
 
-        memory_parameters["data_size"] = data_size
-        disk_parameters = {
-            "model_parameters": model_parameters,
-        }
-        set_shared_disk(disk_parameters, disk_path)
-        set_shared_memory(memory_parameters)
+        new_shared_data = SharedData(disk_path=shared_data.disk_path)
+        new_shared_data.set(
+            "package", FedAvgPackage(model_parameters, data_size), ShareMethod.DISK
+        ).share()
 
-        return memory_parameters, disk_path
+        return new_shared_data
+
+    def select_device(self, cid: int) -> str:
+        if self.device == "cuda":
+            return f"cuda:{cid % self.device_count}"
+        else:
+            return "cpu"
 
     def local_process(self, payload: FedAvgPackage, cid_list: list[int]):
         model_parameters = payload.model_parameters
 
-        common_memory_parameters = {
-            "model_selector": self.model_selector,
-            "model_name": self.model_name,
-            "dataset": self.dataset,
-            "epochs": self.epochs,
-            "batch_size": self.batch_size,
-            "lr": self.lr,
-        }
-        disk_parameters = {
-            "model_parameters": model_parameters,
-        }
+        shared_data = (
+            SharedData()
+            .set("config", self.config)
+            .set("model_parameters", model_parameters, ShareMethod.DISK)
+        )
 
         pool = mp.Pool(processes=self.num_parallels)
         jobs = []
         for cid in cid_list:
-            memory_parameters = common_memory_parameters.copy()
-            memory_parameters["cid"] = cid
-            memory_parameters["device"] = (
-                f"cuda:{self.device_count % self.num_clients}"
-                if self.device == "cuda"
-                else "cpu"
-            )
-            set_shared_memory(memory_parameters)
-            disk_path = self.tmp_dir.joinpath(f"{cid}.pt")
-            set_shared_disk(disk_parameters, disk_path)
-            jobs.append(
-                pool.apply_async(
-                    self.process_client,
-                    (
-                        memory_parameters,
-                        disk_path,
-                    ),
-                )
-            )
+            client_shared_data = SharedData.copy(shared_data)
+            client_shared_data.set("cid", cid).set("device", self.select_device(cid))
+            client_shared_data.disk_path = self.tmp_dir.joinpath(f"{cid}.pt")
+            client_shared_data.share()
+
+            jobs.append(pool.apply_async(self.process_client, (client_shared_data,)))
 
         for job in tqdm(jobs, desc="Client", leave=False):
-            memory_parameters, disk_path = job.get()
-            disk_parameters = torch.load(disk_path, weights_only=False)
-            self.cache.append(
-                FedAvgPackage(
-                    disk_parameters["model_parameters"], memory_parameters["data_size"]
-                )
-            )
+            result = job.get()
+            package = result.get("package", ShareMethod.DISK)
+            assert isinstance(package, FedAvgPackage)
+            self.cache.append(package)
 
     def uplink_package(self) -> list[FedAvgPackage]:
         return self.cache
