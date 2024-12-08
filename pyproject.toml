@@ -1,7 +1,7 @@
 [project]
 name = "blazefl"
-version = "0.1.0a1"
-description = "Add your description here"
+version = "0.1.0b1"
+description = "A blazing-fast and lightweight simulation framework for Federated Learning."
 readme = "README.md"
 authors = [
     { name = "kitsuya0828", email = "kitsuyaazuma@gmail.com" }
