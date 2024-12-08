@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Callable, TypeVar, Any
+from typing import Any
 
 
 class SerialClientTrainer(ABC):
@@ -10,17 +10,9 @@ class SerialClientTrainer(ABC):
     def local_process(self, payload: Any, cid_list: list[int]) -> None: ...
 
 
-M = TypeVar("M")  # Shared Memory
-D = TypeVar("D")  # Disk
-
-
 class ParallelClientTrainer(ABC):
     @abstractmethod
     def uplink_package(self) -> list[Any]: ...
-
-    def get_client_worker(
-        self,
-    ) -> Callable[[M, D], tuple[M, D]]: ...
 
     @abstractmethod
     def local_process(self, payload: Any, cid_list: list[int]) -> None: ...
