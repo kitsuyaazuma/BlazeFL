@@ -1,8 +1,8 @@
 from pathlib import Path
 from typing import Generic, TypeVar
-from pydantic import BaseModel
-import torch
 
+import torch
+from pydantic import BaseModel
 
 SharedMemoryDataType = TypeVar("SharedMemoryDataType", bound=BaseModel)
 DiskDataType = TypeVar("DiskDataType", bound=BaseModel)
@@ -21,7 +21,7 @@ class SharedData(Generic[SharedMemoryDataType, DiskDataType]):
         self.disk_path = disk_path
 
     def share(self) -> "SharedData[SharedMemoryDataType, DiskDataType]":
-        for field_key in self.shared_memory_data.model_fields.keys():
+        for field_key in self.shared_memory_data.model_fields:
             field_value = getattr(self.shared_memory_data, field_key)
             if isinstance(field_value, torch.Tensor):
                 field_value.share_memory_()

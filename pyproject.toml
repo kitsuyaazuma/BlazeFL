@@ -24,3 +24,15 @@ dev = [
     "mypy>=1.13.0",
     "ruff>=0.8.2",
 ]
+
+[tool.ruff.lint]
+select = [
+    "E",  # pycodestyle
+    "F",  # Pyflakes
+    "UP",  # pyupgrade
+    "B",  # flake8-bugbear
+    "SIM",  # flake8-simplify
+    "I",  # isort
+]
+ignore = []
+fixable = ["ALL"]

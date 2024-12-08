@@ -1,21 +1,22 @@
-from logging import Logger
-from pydantic import BaseModel, ConfigDict
-import torch
 import random
 from dataclasses import dataclass
-import torch.multiprocessing as mp
+from logging import Logger
 from pathlib import Path
+
+import torch
+import torch.multiprocessing as mp
+from pydantic import BaseModel, ConfigDict
 from tqdm import tqdm
 
 from blazefl.core import (
-    ServerHandler,
     ModelSelector,
+    ParallelClientTrainer,
     PartitionedDataset,
     SerialClientTrainer,
-    ParallelClientTrainer,
+    ServerHandler,
     SharedData,
 )
-from blazefl.utils.serialize import serialize_model, deserialize_model
+from blazefl.utils.serialize import deserialize_model, serialize_model
 
 
 @dataclass
