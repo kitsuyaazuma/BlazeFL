@@ -116,6 +116,7 @@ class FedAvgSerialClientTrainer(SerialClientTrainer):
         self.batch_size = batch_size
         self.lr = lr
 
+        self.model.to(self.device)
         self.optimizer = torch.optim.SGD(self.model.parameters(), lr=self.lr)
         self.criterion = torch.nn.CrossEntropyLoss()
         self.cache: list[FedAvgUplinkPackage] = []
@@ -138,8 +139,8 @@ class FedAvgSerialClientTrainer(SerialClientTrainer):
         data_size = 0
         for _ in range(self.epochs):
             for data, target in train_loader:
-                data.to(self.device)
-                target.to(self.device)
+                data = data.to(self.device)
+                target = target.to(self.device)
 
                 output = self.model(data)
                 loss = self.criterion(output, target)
@@ -229,8 +230,8 @@ class FedAvgParalleClientTrainer(ParallelClientTrainer):
         data_size = 0
         for _ in range(shared_memory_data.epochs):
             for data, target in train_loader:
-                data.to(shared_memory_data.device)
-                target.to(shared_memory_data.device)
+                data = data.to(shared_memory_data.device)
+                data = target.to(shared_memory_data.device)
 
                 output = model(data)
                 loss = criterion(output, target)
