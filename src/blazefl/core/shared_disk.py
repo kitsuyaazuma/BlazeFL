@@ -1,3 +1,4 @@
+import warnings
 from pathlib import Path
 from typing import Generic, TypeVar
 
@@ -12,9 +13,16 @@ class SharedDisk(Generic[T]):
         self.data_type = type(self.data)
         self.path = path
         if share:
-            self.share()
+            self._share()
 
-    def share(self) -> None:
+    def _share(self) -> None:
+        if not hasattr(self.data, "data"):
+            warnings.warn(
+                "Data is already shared. "
+                "To control when sharing occurs, initialize with share=False.",
+                stacklevel=2,
+            )
+
         self.path.parent.mkdir(parents=True, exist_ok=True)
         torch.save(self.data, self.path)
         del self.data

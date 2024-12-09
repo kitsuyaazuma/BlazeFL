@@ -206,6 +206,7 @@ class FedAvgParalleClientTrainer(ParallelClientTrainer):
         shared_disk: SharedDisk[FedAvgDiskSharedData],
     ) -> FedAvgUplinkPackage:
         shared_data = shared_disk.get_data()
+        del shared_disk
         device = shared_data.device
         model = shared_data.model_selector.select_model(shared_data.model_name).to(
             device
@@ -267,7 +268,6 @@ class FedAvgParalleClientTrainer(ParallelClientTrainer):
         jobs = []
         for cid in cid_list:
             shared_disk = self.get_shared_data(cid, payload)
-            shared_disk.share()
             jobs.append(pool.apply_async(self.process_client, (shared_disk,)))
 
         for job in tqdm(jobs, desc="Client", leave=False):
