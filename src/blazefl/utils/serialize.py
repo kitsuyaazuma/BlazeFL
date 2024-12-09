@@ -1,9 +1,11 @@
 import torch
 
 
-def serialize_model(model: torch.nn.Module) -> torch.Tensor:
+def serialize_model(model: torch.nn.Module, cpu: bool = True) -> torch.Tensor:
     parameters = [param.data.view(-1) for param in model.state_dict().values()]
     serialized_parameters = torch.cat(parameters)
+    if cpu:
+        serialized_parameters = serialized_parameters.cpu()
 
     return serialized_parameters
 
