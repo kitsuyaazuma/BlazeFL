@@ -231,7 +231,7 @@ class FedAvgParalleClientTrainer(ParallelClientTrainer):
         for _ in range(shared_memory_data.epochs):
             for data, target in train_loader:
                 data = data.to(shared_memory_data.device)
-                data = target.to(shared_memory_data.device)
+                target = target.to(shared_memory_data.device)
 
                 output = model(data)
                 loss = criterion(output, target)
