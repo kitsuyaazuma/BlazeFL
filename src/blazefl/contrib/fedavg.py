@@ -5,7 +5,6 @@ from pathlib import Path
 
 import torch
 import torch.multiprocessing as mp
-from pydantic import BaseModel, ConfigDict
 from tqdm import tqdm
 
 from blazefl.core import (
@@ -14,7 +13,7 @@ from blazefl.core import (
     PartitionedDataset,
     SerialClientTrainer,
     ServerHandler,
-    SharedData,
+    SharedDisk,
 )
 from blazefl.utils.serialize import deserialize_model, serialize_model
 
@@ -159,21 +158,17 @@ class FedAvgSerialClientTrainer(SerialClientTrainer):
         return self.cache
 
 
-class FedAvgSharedMemoryData(BaseModel):
-    model_config = ConfigDict(arbitrary_types_allowed=True)
+@dataclass
+class FedAvgDiskSharedData:
     model_selector: ModelSelector
     model_name: str
+    model_parameters: torch.Tensor
     dataset: PartitionedDataset
     epochs: int
     batch_size: int
     lr: float
     device: str
     cid: int
-
-
-class FedAvgDiskData(BaseModel):
-    model_config = ConfigDict(arbitrary_types_allowed=True)
-    model_parameters: torch.Tensor
 
 
 class FedAvgParalleClientTrainer(ParallelClientTrainer):
@@ -208,30 +203,28 @@ class FedAvgParalleClientTrainer(ParallelClientTrainer):
 
     @staticmethod
     def process_client(
-        shared_data: SharedData[FedAvgSharedMemoryData, FedAvgDiskData],
+        shared_disk: SharedDisk[FedAvgDiskSharedData],
     ) -> FedAvgUplinkPackage:
-        shared_memory_data = shared_data.get_shared_memory_data()
-        disk_data = shared_data.get_disk_data()
-        model = shared_memory_data.model_selector.select_model(
-            shared_memory_data.model_name
+        shared_data = shared_disk.get_data()
+        device = shared_data.device
+        model = shared_data.model_selector.select_model(shared_data.model_name).to(
+            device
         )
-
-        deserialize_model(model, disk_data.model_parameters)
-        model.to(shared_memory_data.device)
-        model.train()
-        train_loader = shared_memory_data.dataset.get_dataloader(
+        deserialize_model(model, shared_data.model_parameters)
+        train_loader = shared_data.dataset.get_dataloader(
             type_="train",
-            cid=shared_memory_data.cid,
-            batch_size=shared_memory_data.batch_size,
+            cid=shared_data.cid,
+            batch_size=shared_data.batch_size,
         )
         criterion = torch.nn.CrossEntropyLoss()
-        optimizer = torch.optim.SGD(model.parameters(), lr=shared_memory_data.lr)
+        optimizer = torch.optim.SGD(model.parameters(), lr=shared_data.lr)
 
+        model.train()
         data_size = 0
-        for _ in range(shared_memory_data.epochs):
+        for _ in range(shared_data.epochs):
             for data, target in train_loader:
-                data = data.to(shared_memory_data.device)
-                target = target.to(shared_memory_data.device)
+                data = data.to(device)
+                target = target.to(device)
 
                 output = model(data)
                 loss = criterion(output, target)
@@ -247,10 +240,11 @@ class FedAvgParalleClientTrainer(ParallelClientTrainer):
 
     def get_shared_data(
         self, cid: int, payload: FedAvgDownlinkPackage
-    ) -> SharedData[FedAvgSharedMemoryData, FedAvgDiskData]:
-        shared_memory_data = FedAvgSharedMemoryData(
+    ) -> SharedDisk[FedAvgDiskSharedData]:
+        data = FedAvgDiskSharedData(
             model_selector=self.model_selector,
             model_name=self.model_name,
+            model_parameters=payload.model_parameters,
             dataset=self.dataset,
             epochs=self.epochs,
             batch_size=self.batch_size,
@@ -260,13 +254,11 @@ class FedAvgParalleClientTrainer(ParallelClientTrainer):
             else self.device,
             cid=cid,
         )
-        disk_data = FedAvgDiskData(model_parameters=payload.model_parameters)
-        shared_data = SharedData(
-            shared_memory_data=shared_memory_data,
-            disk_data=disk_data,
-            disk_path=self.tmp_dir.joinpath(f"{cid}.pt"),
+        disk_shared_data = SharedDisk(
+            data=data,
+            path=self.tmp_dir.joinpath(f"{cid}.pkl"),
         )
-        return shared_data
+        return disk_shared_data
 
     def local_process(
         self, payload: FedAvgDownlinkPackage, cid_list: list[int]
@@ -274,8 +266,9 @@ class FedAvgParalleClientTrainer(ParallelClientTrainer):
         pool = mp.Pool(processes=self.num_parallels)
         jobs = []
         for cid in cid_list:
-            client_shared_data = self.get_shared_data(cid, payload).share()
-            jobs.append(pool.apply_async(self.process_client, (client_shared_data,)))
+            shared_disk = self.get_shared_data(cid, payload)
+            shared_disk.share()
+            jobs.append(pool.apply_async(self.process_client, (shared_disk,)))
 
         for job in tqdm(jobs, desc="Client", leave=False):
             result = job.get()
