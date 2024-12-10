@@ -1,7 +1,21 @@
 <p align="center"><img src="https://raw.githubusercontent.com/kitsuya0828/BlazeFL/refs/heads/main/docs/logo.svg" width=600></p>
-<div align="center">
+<div align="center" style="margin-bottom: 20px;">
     <em>A blazing-fast and lightweight simulation framework for Federated Learning</em>
 </div>
+<p align="center">
+  <a href="https://github.com/astral-sh/uv">
+    <img alt="uv" src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/uv/main/assets/badge/v0.json" />
+  </a>
+  <a href="https://pypi.python.org/pypi/blazefl">
+    <img alt="PyPI Version" src="https://img.shields.io/pypi/v/blazefl.svg" />
+  </a>
+  <a href="https://pypi.python.org/pypi/blazefl">
+    <img alt="License" src="https://img.shields.io/pypi/l/blazefl.svg" />
+  </a>
+  <a href="https://pypi.python.org/pypi/blazefl">
+    <img alt="Python Versions" src="https://img.shields.io/pypi/pyversions/blazefl.svg" />
+  </a>
+</p>
 
 ## Why Choose BlazeFL?
 
@@ -17,7 +31,8 @@
 
 - 🔗 **Loose Compatibility with FedLab**: Inspired by [FedLab](https://github.com/SMILELab-FL/FedLab), BlazeFL maintains a degree of compatibility, facilitating an easy transition to production-level implementations when necessary.
 
-*Please note that BlazeFL is currently in beta.*
+> [!IMPORTANT]
+> BlazeFL is currently in beta.
 
 ## Quick Start
 
