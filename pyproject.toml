@@ -7,6 +7,14 @@ authors = [
     { name = "kitsuya0828", email = "kitsuyaazuma@gmail.com" }
 ]
 requires-python = ">=3.12"
+classifiers = [
+  "License :: OSI Approved :: Apache Software License",
+
+  "Programming Language :: Python",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3 :: Only",
+]
 dependencies = [
   "torch>=2.5.1",
   "torchvision>=0.20.1",
