@@ -2,20 +2,20 @@
 <div align="center" style="margin-bottom: 20px;">
     <em>A blazing-fast and lightweight simulation framework for Federated Learning</em>
 </div>
-<p align="center">
+<div align="center">
   <a href="https://github.com/astral-sh/uv">
-    <img alt="uv" src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/uv/main/assets/badge/v0.json" />
+    <img alt="uv" src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/uv/main/assets/badge/v0.json">
   </a>
   <a href="https://pypi.python.org/pypi/blazefl">
-    <img alt="PyPI Version" src="https://img.shields.io/pypi/v/blazefl.svg" />
+    <img alt="PyPI Version" src="https://img.shields.io/pypi/v/blazefl.svg">
   </a>
   <a href="https://pypi.python.org/pypi/blazefl">
-    <img alt="License" src="https://img.shields.io/pypi/l/blazefl.svg" />
+    <img alt="License" src="https://img.shields.io/pypi/l/blazefl.svg">
   </a>
   <a href="https://pypi.python.org/pypi/blazefl">
-    <img alt="Python Versions" src="https://img.shields.io/pypi/pyversions/blazefl.svg" />
+    <img alt="Python Versions" src="https://img.shields.io/pypi/pyversions/blazefl.svg">
   </a>
-</p>
+</div>
 
 ## Why Choose BlazeFL?
 
