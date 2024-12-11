@@ -204,6 +204,7 @@ class FedAvgParalleClientTrainer(
         self.model_selector = model_selector
         self.model_name = model_name
         self.state_dir = state_dir
+        self.state_dir.mkdir(parents=True, exist_ok=True)
         self.dataset = dataset
         self.epochs = epochs
         self.batch_size = batch_size
@@ -297,7 +298,7 @@ class FedAvgParalleClientTrainer(
             cid=cid,
             seed=self.seed,
             payload=payload,
-            state_path=self.state_dir,
+            state_path=self.state_dir.joinpath(f"{cid}.pt"),
         )
         return data
 
