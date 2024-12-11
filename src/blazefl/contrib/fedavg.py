@@ -1,6 +1,5 @@
 import random
 from dataclasses import dataclass
-from logging import Logger
 from pathlib import Path
 
 import torch
@@ -14,7 +13,12 @@ from blazefl.core import (
     SerialClientTrainer,
     ServerHandler,
 )
-from blazefl.utils.serialize import deserialize_model, serialize_model
+from blazefl.utils import (
+    RandomState,
+    deserialize_model,
+    seed_everything,
+    serialize_model,
+)
 
 
 @dataclass
@@ -31,21 +35,20 @@ class FedAvgDownlinkPackage:
 class FedAvgServerHandler(ServerHandler):
     def __init__(
         self,
-        model: torch.nn.Module,
+        model_selector: ModelSelector,
+        model_name: str,
         dataset: PartitionedDataset,
         global_round: int,
         num_clients: int,
         sample_ratio: float,
         device: str,
-        logger: Logger,
     ) -> None:
-        self.model = model
+        self.model = model_selector.select_model(model_name)
         self.dataset = dataset
         self.global_round = global_round
         self.num_clients = num_clients
         self.sample_ratio = sample_ratio
         self.device = device
-        self.logger = logger
 
         self.client_buffer_cache: list[FedAvgUplinkPackage] = []
         self.num_clients_per_round = int(self.num_clients * self.sample_ratio)
@@ -95,10 +98,13 @@ class FedAvgServerHandler(ServerHandler):
         return FedAvgDownlinkPackage(model_parameters)
 
 
-class FedAvgSerialClientTrainer(SerialClientTrainer):
+class FedAvgSerialClientTrainer(
+    SerialClientTrainer[FedAvgUplinkPackage, FedAvgDownlinkPackage]
+):
     def __init__(
         self,
-        model: torch.nn.Module,
+        model_selector: ModelSelector,
+        model_name: str,
         dataset: PartitionedDataset,
         device: str,
         num_clients: int,
@@ -106,7 +112,7 @@ class FedAvgSerialClientTrainer(SerialClientTrainer):
         batch_size: int,
         lr: float,
     ) -> None:
-        self.model = model
+        self.model = model_selector.select_model(model_name)
         self.dataset = dataset
         self.device = device
         self.num_clients = num_clients
@@ -130,7 +136,9 @@ class FedAvgSerialClientTrainer(SerialClientTrainer):
             pack = self.train(model_parameters, data_loader)
             self.cache.append(pack)
 
-    def train(self, model_parameters, train_loader) -> FedAvgUplinkPackage:
+    def train(
+        self, model_parameters: torch.Tensor, train_loader: DataLoader
+    ) -> FedAvgUplinkPackage:
         deserialize_model(self.model, model_parameters)
         self.model.train()
 
@@ -167,7 +175,9 @@ class FedAvgDiskSharedData:
     lr: float
     device: str
     cid: int
+    seed: int
     payload: FedAvgDownlinkPackage
+    state_path: Path
 
 
 class FedAvgParalleClientTrainer(
@@ -179,28 +189,29 @@ class FedAvgParalleClientTrainer(
         self,
         model_selector: ModelSelector,
         model_name: str,
-        tmp_dir: Path,
+        share_dir: Path,
+        state_dir: Path,
         dataset: PartitionedDataset,
         device: str,
         num_clients: int,
         epochs: int,
         batch_size: int,
         lr: float,
+        seed: int,
         num_parallels: int,
     ) -> None:
+        super().__init__(num_parallels, share_dir)
         self.model_selector = model_selector
         self.model_name = model_name
+        self.state_dir = state_dir
         self.dataset = dataset
         self.epochs = epochs
         self.batch_size = batch_size
         self.lr = lr
-        self.tmp_dir = tmp_dir
-        self.tmp_dir.mkdir(parents=True, exist_ok=True)
         self.device = device
         self.num_clients = num_clients
-        self.num_parallels = num_parallels
+        self.seed = seed
 
-        self.cache: list[FedAvgUplinkPackage] = []
         if self.device == "cuda":
             self.device_count = torch.cuda.device_count()
 
@@ -208,6 +219,14 @@ class FedAvgParalleClientTrainer(
     def process_client(path: Path) -> Path:
         data = torch.load(path, weights_only=False)
         assert isinstance(data, FedAvgDiskSharedData)
+
+        if data.state_path.exists():
+            state = torch.load(data.state_path)
+            assert isinstance(state, RandomState)
+            RandomState.set_random_state(state)
+        else:
+            seed_everything(data.seed, device=data.device)
+
         model = data.model_selector.select_model(data.model_name)
         train_loader = data.dataset.get_dataloader(
             type_="train",
@@ -222,10 +241,8 @@ class FedAvgParalleClientTrainer(
             epochs=data.epochs,
             lr=data.lr,
         )
-        torch.save(
-            package,
-            path,
-        )
+        torch.save(package, path)
+        torch.save(RandomState.get_random_state(device=data.device), data.state_path)
         return path
 
     @staticmethod
@@ -278,7 +295,9 @@ class FedAvgParalleClientTrainer(
             lr=self.lr,
             device=device,
             cid=cid,
+            seed=self.seed,
             payload=payload,
+            state_path=self.state_dir,
         )
         return data
 

@@ -26,9 +26,10 @@ class ParallelClientTrainer(
     SerialClientTrainer[UplinkPackage, DownlinkPackage],
     Generic[UplinkPackage, DownlinkPackage, DiskSharedData],
 ):
-    def __init__(self, num_parallels: int, tmp_dir: Path):
+    def __init__(self, num_parallels: int, share_dir: Path) -> None:
         self.num_parallels = num_parallels
-        self.tmp_dir = tmp_dir
+        self.share_dir = share_dir
+        self.share_dir.mkdir(parents=True, exist_ok=True)
         self.cache: list[UplinkPackage] = []
 
     @abstractmethod
@@ -43,7 +44,7 @@ class ParallelClientTrainer(
         jobs: list[ApplyResult] = []
 
         for cid in cid_list:
-            path = self.tmp_dir.joinpath(f"{cid}.pkl")
+            path = self.share_dir.joinpath(f"{cid}.pkl")
             data = self.get_shared_data(cid, payload)
             torch.save(data, path)
             jobs.append(pool.apply_async(self.process_client, (path,)))

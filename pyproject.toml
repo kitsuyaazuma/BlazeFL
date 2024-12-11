@@ -1,6 +1,6 @@
 [project]
 name = "blazefl"
-version = "0.1.0b4"
+version = "0.1.0b5"
 description = "A blazing-fast and lightweight simulation framework for Federated Learning."
 readme = "README.md"
 authors = [
@@ -16,8 +16,8 @@ classifiers = [
   "Programming Language :: Python :: 3 :: Only",
 ]
 dependencies = [
+  "numpy>=2.2.0",
   "torch>=2.5.1",
-  "torchvision>=0.20.1",
   "tqdm>=4.67.1",
   "types-tqdm>=4.67.0.20241119",
 ]
