@@ -3,17 +3,17 @@ requires-python = ">=3.12"
 
 [[package]]
 name = "blazefl"
-version = "0.1.0b4"
+version = "0.1.0b6"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
+    { name = "numpy" },
     { name = "torch" },
-    { name = "torchvision" },
     { name = "tqdm" },
     { name = "types-tqdm" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/2c/b5/49bc8b3337825639a29a2e1c57f515b7154c57215720adb647b195159066/blazefl-0.1.0b4.tar.gz", hash = "sha256:f24b001531505dd43194c64441c98b76921df017218ccc31063d54320697a7c3", size = 60158 }
+sdist = { url = "https://files.pythonhosted.org/packages/b1/5b/29d37c3e7155f0affdc85a890cb2ee0417bd328767e9b5eb67620a15e045/blazefl-0.1.0b6.tar.gz", hash = "sha256:7012af6096c6e00570edff53f1760053492827d2337c7a7050dc4f76b7c0e49e", size = 57390 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/1d/f2/e6b3d813ec0e5f86bd4ac31d6a779b9dab4b0d066af22fbefccb89c9f74f/blazefl-0.1.0b4-py3-none-any.whl", hash = "sha256:f3c6cae954b3eac9f780c8410fcb4c8a51eb896205fb977d6476d25ae6484ba5", size = 12309 },
+    { url = "https://files.pythonhosted.org/packages/13/46/1bf1931ec8a80b37b2e87140b2421a1dc8f9ec4919755bf0ee8ce8ac98f6/blazefl-0.1.0b6-py3-none-any.whl", hash = "sha256:5e6fb8133e28ca1c717ebd91ce8ff0f0fa190fc5fc5f7a8c77a16edf545d4085", size = 13764 },
 ]
 
 [[package]]
@@ -435,7 +435,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "blazefl", specifier = ">=0.1.0b4" },
+    { name = "blazefl", specifier = ">=0.1.0b6" },
     { name = "fedlab", specifier = ">=1.3.0" },
     { name = "scikit-learn", specifier = ">=1.6.0" },
     { name = "torchvision", specifier = ">=0.20.1" },

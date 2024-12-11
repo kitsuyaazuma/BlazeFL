@@ -12,7 +12,7 @@ from sklearn.model_selection import train_test_split
 from torch.utils.data import DataLoader, Dataset
 
 from blazefl.core import PartitionedDataset
-from dataset.utils import FilteredDataset
+from blazefl.utils import FilteredDataset
 
 
 class PartitionedCIFAR10(PartitionedDataset):

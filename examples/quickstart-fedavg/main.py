@@ -1,5 +1,4 @@
 import argparse
-import logging
 from datetime import datetime
 from pathlib import Path
 
@@ -76,19 +75,21 @@ def main(
     )
     model_selector = FedAvgModelSelector(num_classes=10)
     handler = FedAvgServerHandler(
-        model=model_selector.select_model(model_name),
+        model_selector=model_selector,
+        model_name=model_name,
         dataset=dataset,
         global_round=global_round,
         num_clients=num_clients,
         device=device,
         sample_ratio=sample_ratio,
-        logger=logging.getLogger(),
     )
     trainer = FedAvgParalleClientTrainer(
         model_selector=model_selector,
         model_name=model_name,
         dataset=dataset,
-        tmp_dir=share_dir,
+        share_dir=share_dir,
+        state_dir=state_dir,
+        seed=seed,
         device=device,
         num_clients=num_clients,
         epochs=epochs,
@@ -120,14 +121,10 @@ if __name__ == "__main__":
         "--dataset_root_dir", type=str, default="/tmp/quickstart-fedavg/dataset"
     )
     parser.add_argument(
-        "--dataset_split_dir", type=str, default="/tmp/quickstart-fedavg/dsplit"
+        "--dataset_split_dir", type=str, default="/tmp/quickstart-fedavg/split"
     )
-    parser.add_argument(
-        "--share_dir", type=str, default="/tmp/quickstart-fedavg/dshare"
-    )
-    parser.add_argument(
-        "--state_dir", type=str, default="/tmp/quickstart-fedavg/dstate"
-    )
+    parser.add_argument("--share_dir", type=str, default="/tmp/quickstart-fedavg/share")
+    parser.add_argument("--state_dir", type=str, default="/tmp/quickstart-fedavg/state")
 
     args = parser.parse_args()
 
@@ -137,6 +134,7 @@ if __name__ == "__main__":
     dataset_split_dir = dataset_root_dir.joinpath(timestamp)
     share_dir = Path(args.share_dir).joinpath(timestamp)
     state_dir = Path(args.state_dir).joinpath(timestamp)
+    state_dir.mkdir(parents=True, exist_ok=True)
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
     main(
