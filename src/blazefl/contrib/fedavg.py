@@ -1,6 +1,5 @@
 import random
 from dataclasses import dataclass
-from logging import Logger
 from pathlib import Path
 
 import torch
@@ -31,21 +30,20 @@ class FedAvgDownlinkPackage:
 class FedAvgServerHandler(ServerHandler):
     def __init__(
         self,
-        model: torch.nn.Module,
+        model_selector: ModelSelector,
+        model_name: str,
         dataset: PartitionedDataset,
         global_round: int,
         num_clients: int,
         sample_ratio: float,
         device: str,
-        logger: Logger,
     ) -> None:
-        self.model = model
+        self.model = model_selector.select_model(model_name)
         self.dataset = dataset
         self.global_round = global_round
         self.num_clients = num_clients
         self.sample_ratio = sample_ratio
         self.device = device
-        self.logger = logger
 
         self.client_buffer_cache: list[FedAvgUplinkPackage] = []
         self.num_clients_per_round = int(self.num_clients * self.sample_ratio)
@@ -95,10 +93,13 @@ class FedAvgServerHandler(ServerHandler):
         return FedAvgDownlinkPackage(model_parameters)
 
 
-class FedAvgSerialClientTrainer(SerialClientTrainer):
+class FedAvgSerialClientTrainer(
+    SerialClientTrainer[FedAvgUplinkPackage, FedAvgDownlinkPackage]
+):
     def __init__(
         self,
-        model: torch.nn.Module,
+        model_selector: ModelSelector,
+        model_name: str,
         dataset: PartitionedDataset,
         device: str,
         num_clients: int,
@@ -106,7 +107,7 @@ class FedAvgSerialClientTrainer(SerialClientTrainer):
         batch_size: int,
         lr: float,
     ) -> None:
-        self.model = model
+        self.model = model_selector.select_model(model_name)
         self.dataset = dataset
         self.device = device
         self.num_clients = num_clients
@@ -130,7 +131,9 @@ class FedAvgSerialClientTrainer(SerialClientTrainer):
             pack = self.train(model_parameters, data_loader)
             self.cache.append(pack)
 
-    def train(self, model_parameters, train_loader) -> FedAvgUplinkPackage:
+    def train(
+        self, model_parameters: torch.Tensor, train_loader: DataLoader
+    ) -> FedAvgUplinkPackage:
         deserialize_model(self.model, model_parameters)
         self.model.train()
 
