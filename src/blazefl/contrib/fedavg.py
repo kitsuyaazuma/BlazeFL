@@ -182,7 +182,7 @@ class FedAvgParalleClientTrainer(
         self,
         model_selector: ModelSelector,
         model_name: str,
-        tmp_dir: Path,
+        share_dir: Path,
         dataset: PartitionedDataset,
         device: str,
         num_clients: int,
@@ -191,19 +191,16 @@ class FedAvgParalleClientTrainer(
         lr: float,
         num_parallels: int,
     ) -> None:
+        super().__init__(num_parallels, share_dir)
         self.model_selector = model_selector
         self.model_name = model_name
         self.dataset = dataset
         self.epochs = epochs
         self.batch_size = batch_size
         self.lr = lr
-        self.tmp_dir = tmp_dir
-        self.tmp_dir.mkdir(parents=True, exist_ok=True)
         self.device = device
         self.num_clients = num_clients
-        self.num_parallels = num_parallels
 
-        self.cache: list[FedAvgUplinkPackage] = []
         if self.device == "cuda":
             self.device_count = torch.cuda.device_count()
 
