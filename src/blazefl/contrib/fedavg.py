@@ -1,4 +1,5 @@
 import random
+from copy import deepcopy
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -162,7 +163,9 @@ class FedAvgSerialClientTrainer(
         return FedAvgUplinkPackage(model_parameters, data_size)
 
     def uplink_package(self) -> list[FedAvgUplinkPackage]:
-        return self.cache
+        package = deepcopy(self.cache)
+        self.cache = []
+        return package
 
 
 @dataclass
@@ -303,4 +306,6 @@ class FedAvgParalleClientTrainer(
         return data
 
     def uplink_package(self) -> list[FedAvgUplinkPackage]:
-        return self.cache
+        package = deepcopy(self.cache)
+        self.cache = []
+        return package
