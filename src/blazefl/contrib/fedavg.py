@@ -222,7 +222,7 @@ class FedAvgParalleClientTrainer(
         assert isinstance(data, FedAvgDiskSharedData)
 
         if data.state_path.exists():
-            state = torch.load(data.state_path)
+            state = torch.load(data.state_path, weights_only=False)
             assert isinstance(state, RandomState)
             RandomState.set_random_state(state)
         else:
