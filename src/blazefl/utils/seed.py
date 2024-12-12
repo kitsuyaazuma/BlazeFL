@@ -66,9 +66,10 @@ class RandomState:
         os.environ["PYTHONHASHSEED"] = random_state.environ
         np.random.set_state(random_state.numpy)
         torch.manual_seed(random_state.torch_seed)
-        torch.set_rng_state(random_state.torch_rng_state)
         if random_state.cuda is not None:
             torch.cuda.manual_seed(random_state.cuda.manual_seed)
             torch.backends.cudnn.deterministic = random_state.cuda.cudnn_deterministic
             torch.backends.cudnn.benchmark = random_state.cuda.cudnn_benchmark
             torch.cuda.set_rng_state(random_state.cuda.cuda_rng_state)
+        else:
+            torch.set_rng_state(random_state.torch_rng_state)

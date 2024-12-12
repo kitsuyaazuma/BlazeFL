@@ -1,4 +1,5 @@
 import random
+from copy import deepcopy
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -162,7 +163,9 @@ class FedAvgSerialClientTrainer(
         return FedAvgUplinkPackage(model_parameters, data_size)
 
     def uplink_package(self) -> list[FedAvgUplinkPackage]:
-        return self.cache
+        package = deepcopy(self.cache)
+        self.cache = []
+        return package
 
 
 @dataclass
@@ -222,7 +225,7 @@ class FedAvgParalleClientTrainer(
         assert isinstance(data, FedAvgDiskSharedData)
 
         if data.state_path.exists():
-            state = torch.load(data.state_path)
+            state = torch.load(data.state_path, weights_only=False)
             assert isinstance(state, RandomState)
             RandomState.set_random_state(state)
         else:
@@ -303,4 +306,6 @@ class FedAvgParalleClientTrainer(
         return data
 
     def uplink_package(self) -> list[FedAvgUplinkPackage]:
-        return self.cache
+        package = deepcopy(self.cache)
+        self.cache = []
+        return package

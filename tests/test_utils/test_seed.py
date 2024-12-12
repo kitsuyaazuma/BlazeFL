@@ -32,7 +32,7 @@ def test_random_state_cpu() -> None:
 
     _ = random.random()
     _ = np.random.rand()
-    _ = torch.rand(1, device=device).item()
+    _ = torch.rand(1, device=device)
 
     state = RandomState.get_random_state(device)
 
@@ -55,7 +55,7 @@ def test_random_state_cuda() -> None:
 
     _ = random.random()
     _ = np.random.rand()
-    _ = torch.rand(1, device=device).item()
+    _ = torch.rand(1, device=device)
 
     state = RandomState.get_random_state(device)
 
