@@ -23,6 +23,7 @@ class CUDARandomState:
     manual_seed: int
     cudnn_deterministic: bool
     cudnn_benchmark: bool
+    cuda_rng_state: torch.Tensor
 
 
 @dataclass
@@ -30,7 +31,8 @@ class RandomState:
     random: tuple
     environ: str
     numpy: dict
-    torch: int
+    torch_seed: int
+    torch_rng_state: torch.Tensor
     cuda: CUDARandomState | None
 
     @classmethod
@@ -41,10 +43,12 @@ class RandomState:
                 os.environ["PYTHONHASHSEED"],
                 np.random.get_state(),
                 torch.initial_seed(),
+                torch.cuda.get_rng_state(),
                 CUDARandomState(
                     torch.cuda.initial_seed(),
                     torch.backends.cudnn.deterministic,
                     torch.backends.cudnn.benchmark,
+                    torch.cuda.get_rng_state(),
                 ),
             )
         return cls(
@@ -52,6 +56,7 @@ class RandomState:
             os.environ["PYTHONHASHSEED"],
             np.random.get_state(),
             torch.initial_seed(),
+            torch.get_rng_state(),
             None,
         )
 
@@ -60,8 +65,10 @@ class RandomState:
         random.setstate(random_state.random)
         os.environ["PYTHONHASHSEED"] = random_state.environ
         np.random.set_state(random_state.numpy)
+        torch.manual_seed(random_state.torch_seed)
+        torch.set_rng_state(random_state.torch_rng_state)
         if random_state.cuda is not None:
-            torch.manual_seed(random_state.torch)
             torch.cuda.manual_seed(random_state.cuda.manual_seed)
             torch.backends.cudnn.deterministic = random_state.cuda.cudnn_deterministic
             torch.backends.cudnn.benchmark = random_state.cuda.cudnn_benchmark
+            torch.cuda.set_rng_state(random_state.cuda.cuda_rng_state)
