@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 import torch
 
-from src.blazefl.utils.seed import RandomState, seed_everything
+from src.blazefl.utils import RandomState, seed_everything
 
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])

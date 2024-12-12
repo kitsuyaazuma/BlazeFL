@@ -1,6 +1,6 @@
 import pytest
 
-from src.blazefl.utils.dataset import FilteredDataset
+from src.blazefl.utils import FilteredDataset
 
 
 def test_filtered_dataset_basic() -> None:
