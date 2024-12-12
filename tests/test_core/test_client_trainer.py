@@ -4,7 +4,7 @@ from pathlib import Path
 import pytest
 import torch
 
-from src.blazefl.core.client_trainer import ParallelClientTrainer
+from src.blazefl.core import ParallelClientTrainer
 
 
 @dataclass
