@@ -49,7 +49,42 @@ Example code is available in the [examples/quickstart-fedavg](https://github.com
 
 ## FL Simulation Benchmarks
 
-To be written.
+Benchmarks were conducted using Google Cloud’s Compute Engine with the following specifications:
+
+<details>
+<summary> Machine Configuration</summary>
+
+- Machine Type: [a2-highgpu-1g](https://cloud.google.com/compute/docs/gpus#a2-standard) (vCPU count: 12, VM memory: 85 GB)
+- CPU Platform: Intel Cascade Lake
+- GPU: 1 x NVIDIA A100 40GB
+- Boot Disk: 250 GB SSD
+</details>
+
+
+<details>
+<summary> Benchmark Setup</summary>
+
+- Algorithm: [FedAvg](https://proceedings.mlr.press/v54/mcmahan17a)
+- Dataset: [CIFAR-10](https://www.cs.toronto.edu/~kriz/cifar.html)
+- Number of Clients: 100
+- Communication Rounds: 5
+- Local Training: 5 epochs, Learning Rate: 0.1, Batch Size: 50
+- Role
+  -	Server: Aggregation
+  -	Clients: Training and Evaluation (80% training, 20% evaluation)
+- Models
+  - [CNN](https://pytorch.org/tutorials/beginner/blitz/cifar10_tutorial.html) (size: 0.24 MB)
+  - [ResNet18](https://pytorch.org/vision/main/models/generated/torchvision.models.resnet18.html) (size: 44.59 MB)
+
+</details>
+
+For benchmarking purposes, we utilized Flower’s [Quickstart Example](https://github.com/adap/flower/tree/main/examples/quickstart-pytorch) as a baseline to evaluate BlazeFL’s performance and efficiency.
+
+<div style="display: flex; justify-content: center; align-items: center;">
+  <img src="https://github.githubassets.com/assets/GitHub-Logo-ee398b662d42.png" alt="CNN" width="45%" />
+  <img src="https://github.githubassets.com/assets/GitHub-Logo-ee398b662d42.png" alt="ResNet18" width="45%" />
+</div>
+
 
 ## Contributing
 
