@@ -1,4 +1,5 @@
 import argparse
+import logging
 from datetime import datetime
 from pathlib import Path
 
@@ -26,6 +27,7 @@ class FedAvgPipeline:
 
     def main(self):
         while not self.handler.if_stop():
+            logging.info(f"[ROUND {self.handler.round}]")
             # server side
             sampled_clients = self.handler.sample_clients()
             broadcast = self.handler.downlink_package()
@@ -34,9 +36,21 @@ class FedAvgPipeline:
             self.trainer.local_process(broadcast, sampled_clients)
             uploads = self.trainer.uplink_package()
 
+            metadata_list = [
+                pack.metadata for pack in uploads if pack.metadata is not None
+            ]
+            avg_loss = sum(meta["loss"] for meta in metadata_list) / len(metadata_list)
+            avg_acc = sum(meta["acc"] for meta in metadata_list) / len(metadata_list)
+
+            logging.info(
+                f"Average Loss: {avg_loss:.2f}, " f"Average Accuracy: {avg_acc:.2f}"
+            )
+
             # server side
             for pack in uploads:
                 self.handler.load(pack)
+
+        logging.info("[FINISHED]")
 
 
 def main(
@@ -57,6 +71,7 @@ def main(
     share_dir: Path,
     state_dir: Path,
     device: str,
+    serial: bool,
 ):
     dataset = PartitionedCIFAR10(
         root=dataset_root_dir,
@@ -83,22 +98,39 @@ def main(
         device=device,
         sample_ratio=sample_ratio,
     )
-    trainer = FedAvgParalleClientTrainer(
-        model_selector=model_selector,
-        model_name=model_name,
-        dataset=dataset,
-        share_dir=share_dir,
-        state_dir=state_dir,
-        seed=seed,
-        device=device,
-        num_clients=num_clients,
-        epochs=epochs,
-        lr=lr,
-        batch_size=batch_size,
-        num_parallels=num_parallels,
-    )
+    if serial:
+        trainer = FedAvgSerialClientTrainer(
+            model_selector=model_selector,
+            model_name=model_name,
+            dataset=dataset,
+            device=device,
+            num_clients=num_clients,
+            epochs=epochs,
+            lr=lr,
+            batch_size=batch_size,
+        )
+    else:
+        trainer = FedAvgParalleClientTrainer(
+            model_selector=model_selector,
+            model_name=model_name,
+            dataset=dataset,
+            share_dir=share_dir,
+            state_dir=state_dir,
+            seed=seed,
+            device=device,
+            num_clients=num_clients,
+            epochs=epochs,
+            lr=lr,
+            batch_size=batch_size,
+            num_parallels=num_parallels,
+        )
     pipeline = FedAvgPipeline(handler=handler, trainer=trainer)
-    pipeline.main()
+    try:
+        pipeline.main()
+    except KeyboardInterrupt:
+        logging.info("KeyboardInterrupt")
+    except Exception as e:
+        logging.error(e)
 
 
 if __name__ == "__main__":
@@ -107,7 +139,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--model_name", type=str, default="cnn")
     parser.add_argument("--num_clients", type=int, default=100)
-    parser.add_argument("--global_round", type=int, default=100)
+    parser.add_argument("--global_round", type=int, default=5)
     parser.add_argument("--sample_ratio", type=float, default=1.0)
     parser.add_argument("--partition", type=str, default="shards")
     parser.add_argument("--num_shards", type=int, default=200)
@@ -125,6 +157,7 @@ if __name__ == "__main__":
     )
     parser.add_argument("--share_dir", type=str, default="/tmp/quickstart-fedavg/share")
     parser.add_argument("--state_dir", type=str, default="/tmp/quickstart-fedavg/state")
+    parser.add_argument("--serial", action="store_true")
 
     args = parser.parse_args()
 
@@ -155,4 +188,5 @@ if __name__ == "__main__":
         share_dir=share_dir,
         state_dir=state_dir,
         device=device,
+        serial=args.serial,
     )
