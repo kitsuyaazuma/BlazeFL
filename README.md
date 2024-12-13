@@ -81,8 +81,8 @@ Benchmarks were conducted using Google Cloud’s Compute Engine with the followi
 For benchmarking purposes, we utilized Flower’s [Quickstart Example](https://github.com/adap/flower/tree/main/examples/quickstart-pytorch) as a baseline to evaluate BlazeFL’s performance and efficiency.
 
 <div style="display: flex; justify-content: center; align-items: center;">
-  <img src="https://github.githubassets.com/assets/GitHub-Logo-ee398b662d42.png" alt="CNN" width="45%" />
-  <img src="https://github.githubassets.com/assets/GitHub-Logo-ee398b662d42.png" alt="ResNet18" width="45%" />
+  <img src="https://raw.githubusercontent.com/kitsuya0828/BlazeFL/refs/heads/main/docs/benchmark_cnn.png" alt="CNN" width="45%" />
+  <img src="https://raw.githubusercontent.com/kitsuya0828/BlazeFL/refs/heads/main/docs/benchmark_resnet18.png" alt="ResNet18" width="45%" />
 </div>
 
 
