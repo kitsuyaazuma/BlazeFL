@@ -23,9 +23,6 @@
 
 - 🔗 **Loose Compatibility with FedLab**: Inspired by [FedLab](https://github.com/SMILELab-FL/FedLab), BlazeFL maintains a degree of compatibility, facilitating an easy transition to production-level implementations when necessary.
 
-> [!IMPORTANT]
-> BlazeFL is currently in beta.
-
 ## Quick Start
 
 ### Installation
