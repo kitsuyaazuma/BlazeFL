@@ -26,6 +26,7 @@ from blazefl.utils import (
 class FedAvgUplinkPackage:
     model_parameters: torch.Tensor
     data_size: int
+    metadata: dict | None = None
 
 
 @dataclass
@@ -135,6 +136,10 @@ class FedAvgSerialClientTrainer(
                 type_="train", cid=cid, batch_size=self.batch_size
             )
             pack = self.train(model_parameters, data_loader)
+            val_loader = self.dataset.get_dataloader(
+                type_="val", cid=cid, batch_size=self.batch_size
+            )
+            loss, acc = self.evaluate(val_loader)
             self.cache.append(pack)
 
     def train(
@@ -161,6 +166,33 @@ class FedAvgSerialClientTrainer(
         model_parameters = serialize_model(self.model)
 
         return FedAvgUplinkPackage(model_parameters, data_size)
+
+    def evaluate(self, test_loader: DataLoader) -> tuple[float, float]:
+        self.model.eval()
+
+        total_loss = 0.0
+        total_correct = 0
+        total_samples = 0
+        with torch.no_grad():
+            for inputs, labels in test_loader:
+                inputs = inputs.to(self.device)
+                labels = labels.to(self.device)
+
+                outputs = self.model(inputs)
+                loss = self.criterion(outputs, labels)
+
+                _, predicted = torch.max(outputs, 1)
+                correct = torch.sum(predicted.eq(labels)).item()
+
+                batch_size = labels.size(0)
+                total_loss += loss.item() * batch_size
+                total_correct += int(correct)
+                total_samples += batch_size
+
+        avg_loss = total_loss / total_samples
+        avg_acc = total_correct / total_samples
+
+        return avg_loss, avg_acc
 
     def uplink_package(self) -> list[FedAvgUplinkPackage]:
         package = deepcopy(self.cache)
@@ -245,6 +277,17 @@ class FedAvgParalleClientTrainer(
             epochs=data.epochs,
             lr=data.lr,
         )
+        val_loader = data.dataset.get_dataloader(
+            type_="val",
+            cid=data.cid,
+            batch_size=data.batch_size,
+        )
+        loss, acc = FedAvgParalleClientTrainer.evaulate(
+            model=model,
+            test_loader=val_loader,
+            device=data.device,
+        )
+        package.metadata = {"loss": loss, "acc": acc}
         torch.save(package, path)
         torch.save(RandomState.get_random_state(device=data.device), data.state_path)
         return path
@@ -282,6 +325,38 @@ class FedAvgParalleClientTrainer(
         model_parameters = serialize_model(model)
 
         return FedAvgUplinkPackage(model_parameters, data_size)
+
+    @staticmethod
+    def evaulate(
+        model: torch.nn.Module, test_loader: DataLoader, device: str
+    ) -> tuple[float, float]:
+        model.to(device)
+        model.eval()
+        criterion = torch.nn.CrossEntropyLoss()
+
+        total_loss = 0.0
+        total_correct = 0
+        total_samples = 0
+        with torch.no_grad():
+            for inputs, labels in test_loader:
+                inputs = inputs.to(device)
+                labels = labels.to(device)
+
+                outputs = model(inputs)
+                loss = criterion(outputs, labels)
+
+                _, predicted = torch.max(outputs, 1)
+                correct = torch.sum(predicted.eq(labels)).item()
+
+                batch_size = labels.size(0)
+                total_loss += loss.item() * batch_size
+                total_correct += int(correct)
+                total_samples += batch_size
+
+        avg_loss = total_loss / total_samples
+        avg_acc = total_correct / total_samples
+
+        return avg_loss, avg_acc
 
     def get_shared_data(
         self, cid: int, payload: FedAvgDownlinkPackage
