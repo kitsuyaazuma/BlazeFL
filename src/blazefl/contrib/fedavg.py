@@ -140,6 +140,7 @@ class FedAvgSerialClientTrainer(
                 type_="val", cid=cid, batch_size=self.batch_size
             )
             loss, acc = self.evaluate(val_loader)
+            pack.metadata = {"loss": loss, "acc": acc}
             self.cache.append(pack)
 
     def train(
