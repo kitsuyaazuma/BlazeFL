@@ -30,9 +30,9 @@ pip install .
 To execute the FedAvg example, run the following command:
 
 ```bash
-uv run python main.py --num_parallels 3
+uv run python main.py num_parallels 3
 ```
 
-Adjust the `--num_parallels` parameter based on your system’s specifications to optimize performance.
+Adjust the `num_parallels` parameter based on your system’s specifications to optimize performance.
 
-For additional options and configurations, please refer to the [`main.py`](https://github.com/kitsuya0828/BlazeFL/blob/main/examples/quickstart-fedavg/main.py) file.
+For additional options and configurations, please refer to the [`config.yaml`](https://github.com/kitsuya0828/BlazeFL/blob/main/examples/quickstart-fedavg/config/config.yaml) file.
