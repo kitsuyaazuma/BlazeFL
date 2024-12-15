@@ -11,7 +11,7 @@
 
 ## Why Choose BlazeFL?
 
-- 🚀 **High Performance**: Optimized for single-node simulations, BlazeFL allows you to adjust the degree of parallelism. For example, if you want to simulate 100 clients on a single node but lack the resources to run them all concurrently, you can configure 10 parallel processes to manage the simulation efficiently. Additionally, BlazeFL enhances performance by storing shared parameters on disk instead of using shared memory, simplifying memory management and reducing overhead. 
+- 🚀 **High Performance**: Optimized for single-node simulations, BlazeFL allows you to adjust the degree of parallelism. For example, if you want to simulate 100 clients on a single node but lack the resources to run them all concurrently, you can configure 10 parallel processes to manage the simulation efficiently. 
 
 - 🔧 **Extensibility**: BlazeFL provides interfaces solely for communication and parallelization, avoiding excessive abstraction. This design ensures that the framework remains flexible and adaptable to various use cases.
 
@@ -22,6 +22,12 @@
 - 🏷️ **Type Hint Support**: The framework fully supports type hints, enhancing code readability and maintainability.
 
 - 🔗 **Loose Compatibility with FedLab**: Inspired by [FedLab](https://github.com/SMILELab-FL/FedLab), BlazeFL maintains a degree of compatibility, facilitating an easy transition to production-level implementations when necessary.
+
+## How BlazeFL Works
+
+BlazeFL enhances performance by storing shared parameters on disk instead of shared memory, enabling efficient parameter sharing across processes, simplifying memory management, and reducing overhead.
+
+<div align="center"><img src="https://raw.githubusercontent.com/kitsuya0828/BlazeFL/refs/heads/main/docs/architecture.png" width="80%"></div>
 
 ## Quick Start
 
