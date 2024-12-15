@@ -3,6 +3,7 @@ import logging
 from datetime import datetime
 from pathlib import Path
 
+from blazefl.utils import seed_everything
 import torch
 import torch.multiprocessing as mp
 from dataset import PartitionedCIFAR10
@@ -73,6 +74,7 @@ def main(
     device: str,
     serial: bool,
 ):
+    seed_everything(seed, device=device)
     dataset = PartitionedCIFAR10(
         root=dataset_root_dir,
         path=dataset_split_dir,
