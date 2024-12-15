@@ -30,7 +30,7 @@ pip install .
 To execute the FedAvg example, run the following command:
 
 ```bash
-uv run python main.py num_parallels 3
+uv run python main.py num_parallels=3
 ```
 
 Adjust the `num_parallels` parameter based on your system’s specifications to optimize performance.
