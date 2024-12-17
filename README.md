@@ -1,4 +1,4 @@
-<div align="center"><img src="https://raw.githubusercontent.com/kitsuya0828/BlazeFL/refs/heads/main/docs/logo.svg" width=600></div>
+<div align="center"><img src="https://raw.githubusercontent.com/kitsuya0828/BlazeFL/refs/heads/main/docs/imgs/logo.svg" width=600></div>
 <div align="center">A blazing-fast and lightweight simulation framework for Federated Learning</div>
 <br>
 <div align="center">
@@ -27,7 +27,7 @@
 
 BlazeFL enhances performance by storing shared parameters on disk instead of shared memory, enabling efficient parameter sharing across processes, simplifying memory management, and reducing overhead.
 
-<div align="center"><img src="https://raw.githubusercontent.com/kitsuya0828/BlazeFL/refs/heads/main/docs/architecture.png" width="80%"></div>
+<div align="center"><img src="https://raw.githubusercontent.com/kitsuya0828/BlazeFL/refs/heads/main/docs/imgs/architecture.png"></div>
 
 ## Quick Start
 
@@ -84,8 +84,8 @@ Benchmarks were conducted using Google Cloud’s Compute Engine with the followi
 For benchmarking purposes, we utilized Flower’s [Quickstart Example](https://github.com/adap/flower/tree/main/examples/quickstart-pytorch) as a baseline to evaluate BlazeFL’s performance and efficiency.
 
 <div style="display: flex; justify-content: center; align-items: center;">
-  <img src="https://raw.githubusercontent.com/kitsuya0828/BlazeFL/refs/heads/main/docs/benchmark_cnn.png" alt="CNN" width="45%" />
-  <img src="https://raw.githubusercontent.com/kitsuya0828/BlazeFL/refs/heads/main/docs/benchmark_resnet18.png" alt="ResNet18" width="45%" />
+  <img src="https://raw.githubusercontent.com/kitsuya0828/BlazeFL/refs/heads/main/docs/imgs/benchmark_cnn.png" alt="CNN" width="45%" />
+  <img src="https://raw.githubusercontent.com/kitsuya0828/BlazeFL/refs/heads/main/docs/imgs/benchmark_resnet18.png" alt="ResNet18" width="45%" />
 </div>
 
 
