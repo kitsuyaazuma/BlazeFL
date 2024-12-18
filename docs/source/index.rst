@@ -1,17 +1,10 @@
-.. BlazeFL documentation master file, created by
-   sphinx-quickstart on Tue Dec 17 22:20:43 2024.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
-
 BlazeFL documentation
 =====================
 
-Add your content using ``reStructuredText`` syntax. See the
-`reStructuredText <https://www.sphinx-doc.org/en/master/usage/restructuredtext/index.html>`_
-documentation for details.
 
+.. autosummary::
+   :toctree: generated/
+   :template: autosummary/module.rst
+   :recursive:
 
-.. toctree::
-   :maxdepth: 2
-   :caption: Contents:
-
+   blazefl
