@@ -31,6 +31,7 @@
 
    .. autosummary::
        :toctree:
+       :template: autosummary/class.rst
        :recursive:
    {% for item in classes %}
       {{ item }}
