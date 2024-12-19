@@ -38,4 +38,5 @@ exclude_patterns = []
 
 html_theme = "sphinx_book_theme"
 html_logo = "_static/logo.png"
+html_favicon = "_static/favicon.ico"
 html_static_path = ["_static"]

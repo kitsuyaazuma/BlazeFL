@@ -1,10 +1,20 @@
-BlazeFL documentation
+.. image:: _static/logo.png
+   :align: center
+   :width: 80%
+   :class: dark-light
+
+
+BlazeFL Documentation
 =====================
 
+**BlazeFL** is a blazing-fast and lightweight simulation framework for Federated Learning.
 
-.. autosummary::
-   :toctree: generated/
-   :template: autosummary/module.rst
-   :recursive:
+.. toctree::
+   :maxdepth: 1
 
-   blazefl
+   install
+   overview
+   benchmark
+   example
+   reference
+   contribute
