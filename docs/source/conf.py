@@ -9,7 +9,7 @@
 project = "BlazeFL"
 copyright = "2024, kitsuya0828"
 author = "kitsuya0828"
-release = "0.1.0rc2"
+release = "0.1.1"
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
