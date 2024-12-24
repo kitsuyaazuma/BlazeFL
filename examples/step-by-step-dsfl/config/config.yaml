@@ -1,0 +1,16 @@
+model_name: cnn
+num_clients: 100
+global_round: 5
+sample_ratio: 1.0
+partition: shards
+num_shards: 200
+dir_alpha: 1.0
+seed: 42
+epochs: 5
+batch_size: 50
+lr: 0.1
+num_parallels: 10
+dataset_root_dir: /tmp/step-by-step-dsfl/dataset
+dataset_split_dir: /tmp/step-by-step-dsfl/split
+share_dir: /tmp/step-by-step-dsfl/share
+state_dir: /tmp/step-by-step-dsfl/state
