@@ -140,6 +140,7 @@ class DSFLServerHandler(ServerHandler[DSFLUplinkPackage, DSFLDownlinkPackage]):
         kd_lr: float,
         device: str,
     ) -> None:
+        model.to(device)
         model.train()
         openset = dataset.get_dataset(type_="open", cid=None)
         open_loader = DataLoader(
