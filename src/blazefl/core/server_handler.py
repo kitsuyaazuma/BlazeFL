@@ -1,8 +1,11 @@
 from abc import ABC, abstractmethod
-from typing import Any
+from typing import Generic, TypeVar
+
+UplinkPackage = TypeVar("UplinkPackage")
+DownlinkPackage = TypeVar("DownlinkPackage")
 
 
-class ServerHandler(ABC):
+class ServerHandler(ABC, Generic[UplinkPackage, DownlinkPackage]):
     """
     Abstract base class for server-side operations in federated learning.
 
@@ -15,12 +18,12 @@ class ServerHandler(ABC):
     """
 
     @abstractmethod
-    def downlink_package(self) -> Any:
+    def downlink_package(self) -> DownlinkPackage:
         """
         Prepare the data package to be sent from the server to clients.
 
         Returns:
-            Any: The data package intended for client consumption.
+            DownlinkPackage: The data package intended for client consumption.
         """
         ...
 
@@ -45,12 +48,13 @@ class ServerHandler(ABC):
         ...
 
     @abstractmethod
-    def global_update(self, buffer: list[Any]) -> None:
+    def global_update(self, buffer: list[UplinkPackage]) -> None:
         """
         Update the global model based on the aggregated data from clients.
 
         Args:
-            buffer (list[Any]): A list containing data from clients to be aggregated.
+            buffer (list[UplinkPackage]): A list containing data from clients to be
+            aggregated.
 
         Returns:
             None
@@ -58,12 +62,12 @@ class ServerHandler(ABC):
         ...
 
     @abstractmethod
-    def load(self, payload: Any) -> bool:
+    def load(self, payload: UplinkPackage) -> bool:
         """
         Load a given payload into the server's state.
 
         Args:
-            payload (Any): The data to be loaded into the server.
+            payload (UplinkPackage): The data to be loaded into the server.
 
         Returns:
             bool: True if the payload was successfully loaded; False otherwise.
