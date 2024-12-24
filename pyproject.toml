@@ -1,6 +1,6 @@
 [project]
 name = "blazefl"
-version = "0.1.1"
+version = "0.1.2"
 description = "A blazing-fast and lightweight simulation framework for Federated Learning."
 readme = "README.md"
 authors = [
