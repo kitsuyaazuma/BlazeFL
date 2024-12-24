@@ -404,7 +404,7 @@ class FedAvgDiskSharedData:
     state_path: Path
 
 
-class FedAvgParalleClientTrainer(
+class FedAvgParallelClientTrainer(
     ParallelClientTrainer[
         FedAvgUplinkPackage, FedAvgDownlinkPackage, FedAvgDiskSharedData
     ]
@@ -510,7 +510,7 @@ class FedAvgParalleClientTrainer(
             cid=data.cid,
             batch_size=data.batch_size,
         )
-        package = FedAvgParalleClientTrainer.train(
+        package = FedAvgParallelClientTrainer.train(
             model=model,
             model_parameters=data.payload.model_parameters,
             train_loader=train_loader,
@@ -523,7 +523,7 @@ class FedAvgParalleClientTrainer(
             cid=data.cid,
             batch_size=data.batch_size,
         )
-        loss, acc = FedAvgParalleClientTrainer.evaulate(
+        loss, acc = FedAvgParallelClientTrainer.evaulate(
             model=model,
             test_loader=val_loader,
             device=data.device,

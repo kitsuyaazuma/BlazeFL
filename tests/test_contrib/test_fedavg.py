@@ -3,7 +3,7 @@ import torch
 from torch.utils.data import DataLoader, Dataset
 
 from src.blazefl.contrib.fedavg import (
-    FedAvgParalleClientTrainer,
+    FedAvgParallelClientTrainer,
     FedAvgSerialClientTrainer,
     FedAvgServerHandler,
 )
@@ -148,7 +148,7 @@ def test_server_and_parallel_integration(
         device=device,
     )
 
-    trainer = FedAvgParalleClientTrainer(
+    trainer = FedAvgParallelClientTrainer(
         model_selector=model_selector,
         model_name=model_name,
         share_dir=tmp_share_dir,
