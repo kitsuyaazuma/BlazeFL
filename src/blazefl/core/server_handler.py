@@ -11,7 +11,8 @@ class ServerHandler(ABC, Generic[UplinkPackage, DownlinkPackage]):
 
     This class defines the essential methods that a server handler must implement
     to manage communication and coordination with clients during federated learning
-    processes.
+    processes. It uses generic types `UplinkPackage` and `DownlinkPackage` to
+    define the types of data exchanged between the server and clients.
 
     Raises:
         NotImplementedError: If any of the methods are not implemented in a subclass.
@@ -53,8 +54,8 @@ class ServerHandler(ABC, Generic[UplinkPackage, DownlinkPackage]):
         Update the global model based on the aggregated data from clients.
 
         Args:
-            buffer (list[UplinkPackage]): A list containing data from clients to be
-            aggregated.
+            buffer (list[UplinkPackage]): A list containing data sent by clients,
+            typically representing model updates or gradients.
 
         Returns:
             None
