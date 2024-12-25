@@ -3,9 +3,9 @@
 <br>
 <div align="center">
   <a href="https://github.com/astral-sh/uv"><img src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/uv/main/assets/badge/v0.json" alt="uv"></a>
-  <a href="https://pypi.python.org/pypi/blazefl"><img src="https://img.shields.io/pypi/v/blazefl.svg" alt="PyPI Version"></a>
-  <a href="https://pypi.python.org/pypi/blazefl"><img src="https://img.shields.io/pypi/l/blazefl.svg" alt="License"></a>
-  <a href="https://pypi.python.org/pypi/blazefl"><img src="https://img.shields.io/pypi/pyversions/blazefl.svg" alt="Python Versions"></a>
+  <a href="https://pypi.python.org/pypi/blazefl"><img src="https://img.shields.io/pypi/v/blazefl" alt="PyPI Version"></a>
+  <a href="https://pypi.python.org/pypi/blazefl"><img src="https://img.shields.io/pypi/l/blazefl" alt="License"></a>
+  <a href="https://pypi.python.org/pypi/blazefl"><img src="https://img.shields.io/pypi/pyversions/blazefl" alt="Python Versions"></a>
 </div>
 
 
@@ -47,7 +47,9 @@ pip install blazefl
 
 ### Running Examples
 
-Example code is available in the [examples/quickstart-fedavg](https://github.com/kitsuya0828/BlazeFL/tree/main/examples/quickstart-fedavg) directory.
+Quick start code is in [examples/quickstart-fedavg](https://github.com/kitsuya0828/BlazeFL/tree/main/examples/quickstart-fedavg).
+
+For a more detailed implementation guide, checkout the [examples/step-by-step-dsfl](https://github.com/kitsuya0828/BlazeFL/tree/main/examples/step-by-step-dsfl).
 
 
 ## FL Simulation Benchmarks
