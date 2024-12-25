@@ -1,21 +1,29 @@
 # Step-by-Step Tutorial: DS-FL
 
-Welcome to this step-by-step tutorial on implementing [DS-FL](https://doi.ieeecomputersociety.org/10.1109/TMC.2021.3070013) using BlazeFL. DS-FL is a Federated Learning method that performs knowledge distillation by exchanging model outputs on an open dataset. 
+> [!NOTE]
+> **Work in Progress**  
+> This tutorial is currently under development! We welcome any feedback or contributions from those who try it out. Feel free to submit pull requests, open issues, or share your ideas in the repository to help make this tutorial even better.
 
-Thanks to its high extensibility, the BlazeFL framework allows for the simple implementation of not only typical parameter exchange methods but also distillation-based methods and other innovative approaches, much like assembling puzzle pieces. 
+Welcome to this step-by-step tutorial on implementing [DS-FL](https://doi.ieeecomputersociety.org/10.1109/TMC.2021.3070013) using BlazeFL!
+DS-FL is a Federated Learning (FL) method that utilizes knowledge distillation by sharing model outputs on an open dataset. 
 
-This tutorial will surely assist you in implementing your unique and unconventional FL methods, helping you break free from traditional constraints.
+Thanks to BlazeFL's highly modular design, you can easily implement both standard FL approaches (like parameter exchange) and advanced methods (like distillation-based FL).
+Think of it as assembling puzzle pieces to create your own unique FL methods—beyond the constraints of traditional frameworks.
+
+
+In this tutorial, we’ll guide you through creating a DS-FL pipeline using BlazeFL.
+By following along, you’ll be able to develop your own original FL methods.
 
 ## Setup a Project
 
-First, open your terminal and create a new directory for your project.
+Start by creating a new directory for your DS-FL project:
 
 ```bash
 mkdir step-by-step-dsfl
 cd step-by-step-dsfl
 ```
 
-Next, Initialize the projcet with [uv](https://github.com/astral-sh/uv) or your favorite package manager.
+Next, Initialize the projcet with [uv](https://github.com/astral-sh/uv) (or any other package manager of your choice).
 
 ```bash
 uv init
@@ -31,10 +39,11 @@ uv add blazefl
 
 ## Implementing a PartitionedDataset
 
-By pre-splitting and saving the dataset in advance, the server or clients can retrieve data directly without needing to repartition it for every round.
-In BlazeFL, it is recommended to implement your dataset by extending the abstract class `PartitionedDataset`.
+Before running Federated Learning, it’s common to pre-split the dataset for each client.
+By saving these partitions ahead of time, your server or clients can simply load the data each round without re-partitioning.
 
-For example, in DS-FL, you can implement the `DSFLPartitionedDataset` class as follows:
+In BlazeFL, we recommend extending the `PartitionedDataset` abstract class to create your own dataset class. 
+For example, you can implement `DSFLPartitionedDataset` like this:
 
 ```python
 from blazefl.core import PartitionedDataset
@@ -73,21 +82,20 @@ class DSFLPartitionedDataset(PartitionedDataset):
         return data_loader
 ```
 
-The `PartitionedDataset` class requires the implementation of two methods: `get_dataset` and `get_dataloader`.
-The `get_dataset` method returns a `Dataset` based on the specified type and client ID, while the `get_dataloader` method provides the corresponding `DataLoader`.
-This design allows for flexibility, making it suitable even for unconventional approaches like DS-FL, which utilizes an open dataset.
-If only one of these methods is needed, or if neither is required, you can simply use pass in their implementation.
+Here, `get_dataset` returns a `Dataset` for the specified type (e.g., "train", "val", "open", or "test") and client ID.
+Meanwhile, `get_dataloader` wraps that dataset in a `DataLoader`.
+This design is flexible enough even for methods like DS-FL, which rely on an open dataset.
+If you don’t need one of these methods, you can simply implement it with `pass`.
 
-The complete source code can be found [here](https://github.com/kitsuya0828/BlazeFL/tree/main/examples/step-by-step-dsfl/dataset).
+You can view the complete source code [here](https://github.com/kitsuya0828/BlazeFL/tree/main/examples/step-by-step-dsfl/dataset).
 
 ## Implementing a ModelSelector
 
-Traditional FL frameworks generally assume that all clients use the same model.
-However, in distillation-based FL methods like DS-FL, it is possible for clients to use different models.
+Most traditional FL frameworks assume all clients use the same model, but in distillation-based methods like DS-FL, clients can use different models.
 
-To accommodate this, BlazeFL provides an abstract class called `ModelSelector`, which allows the server and clients to dynamically select models as needed.
-
-For example, in DS-FL, you can implement the `DSFLModelSelector` class as follows:
+BlazeFL provides an abstract class called `ModelSelector` to handle this scenario.
+It lets you select different models on the fly for the server and clients.
+For instance:
 
 ```python
 from blazefl.core import ModelSelector
@@ -106,22 +114,17 @@ class DSFLModelSelector(ModelSelector):
                 raise ValueError
 ```
 
-The ModelSelector class requires the implementation of the `select_model` method.
-This method is straightforward: it takes a model name as input and returns the corresponding `nn.Module`.
-Variables such as the number of classes in a classification task can be stored as attributes of the `ModelSelector` class for convenience.
+Here, `select_model` simply takes a string (the model name) and returns the corresponding `nn.Module`.
+You can store useful information (like the number of classes) as attributes in your `ModelSelector`.
 
-The complete source code can be found [here](https://github.com/kitsuya0828/BlazeFL/tree/main/examples/step-by-step-dsfl/models).
-
+The full source code can be found [here](https://github.com/kitsuya0828/BlazeFL/tree/main/examples/step-by-step-dsfl/models).
 
 ## Defining DownlinkPackage and UplinkPackage
 
-In traditional FL frameworks, data exchanged between the server and clients is typically represented using generic data structures like lists or dictionaries.
-However, this approach lacks type definitions for individual objects within the package, making debugging challenging and reducing code readability.
+In many FL frameworks, communication between the server and clients is often handled through generic data structures like dictionaries or lists.
+However, BlazeFL encourages you to define dedicated classes for these communication packets, making your code more organized and readable.
 
-BlazeFL addresses this issue by recommending the use of `DownlinkPackage` and `UplinkPackage` for defining types for data exchanged between the server and clients.
-By leveraging type inference, debugging becomes easier within the editor, and the overall code readability improves significantly.
-
-For instance, in DS-FL, you can define the `DSFLDownlinkPackage` and `DSFLUplinkPackage` as follows:
+In DS-FL, you could define them like this:
 
 ```python
 @dataclass
@@ -137,18 +140,16 @@ class DSFLDownlinkPackage:
     indices: torch.Tensor | None
     next_indices: torch.Tensor
 ```
-
-Using the `@dataclass` decorator allows for concise and readable class definitions.
-This approach not only simplifies the implementation but also provides a clear structure for the data being exchanged, making it easier to maintain and extend.
+Using Python’s `@dataclass` makes these classes concise and easy to maintain.
+Including explicit types for each attribute also improves IDE support for debugging.
 
 ## Implementing a ServerHandler
 
-In traditional FL, the server is responsible for tasks like aggregating data and updating models.
-These tasks can vary significantly depending on the use case.
-BlazeFL enhances flexibility by not imposing any predefined aggregation or update functions.
-Instead, it provides the `ServerHandler` class, which focuses solely on client-server communication as a mandatory requirement.
+The server in an FL setup typically handles aggregating information from clients and updating the global model.
+BlazeFL does not force any specific "aggregation" or "update" strategy.
+Instead, it provides a flexible `ServerHandler` class that focuses on the necessary client-server communication.
 
-For instance, in DS-FL, the `DSFLServerHandler` class can be implemented by extending the `ServerHandler` class:
+Below is an example for DS-FL:
 
 ```python
 class DSFLServerHandler(ServerHandler[DSFLUplinkPackage, DSFLDownlinkPackage]):
@@ -219,18 +220,27 @@ class DSFLServerHandler(ServerHandler[DSFLUplinkPackage, DSFLDownlinkPackage]):
         )
 ```
 
-The `ServerHandler` class requires the implementation of five key methods: `sample_clients`, `if_stop`, `load, global_update`, and `downlink_package`.
-You can find detailed explanations of each method in the [official documentation](https://kitsuya0828.github.io/BlazeFL/generated/blazefl.core.ServerHandler.html#blazefl.core.ServerHandler)
-If any of these methods are unnecessary for your use case, they can simply be implemented with pass.
+The `ServerHandler` class requires five core methods to be implemented:
 
-In the case of DS-FL, the `global_update` method aggregates the soft labels received from clients and performs model distillation. However, BlazeFL allows you to implement any custom logic in any desired order, ensuring high flexibility to meet your requirements.
+- `sample_clients`
+- `if_stop`
+- `load`
+- `global_update`
+- `downlink_package`
+
+If any of these methods are unnecessary for your approach, you can simply implement them with `pass`.
+
+In DS-FL, the `global_update` method aggregates the soft labels from clients and distills them into a global model.
+However, you can flexibly place any custom operations in this or other methods.
+You can find more details in the [official documentation](https://kitsuya0828.github.io/BlazeFL/generated/blazefl.core.ServerHandler.html#blazefl.core.ServerHandler).
+
 
 ## Implementing a ParallelClientTrainer
 
-In traditional FL frameworks, clients are typically trained sequentially, and their model parameters are uploaded to the server.
-However, BlazeFL provides the `ParallelClientTrainer` class, which enables parallel training of clients while maintaining high extensibility.
+Traditional FL frameworks often train each client sequentially and upload parameters to the server.
+With BlazeFL, the `ParallelClientTrainer` class lets you train multiple clients in parallel while retaining full extensibility.
 
-For example, in DS-FL, the `DSFLParallelClientTrainer` class can be implemented as follows:
+An example DS-FL client trainer looks like this:
 
 ```python
 @dataclass
@@ -350,23 +360,22 @@ class DSFLParallelClientTrainer(
         return package
 ```
 
+This class uses Python’s standard library multiprocessing (wrapped under BlazeFL) to train clients concurrently.
+You mainly need to implement:
 
-The `ParallelClientTrainer` class utilizes [multiprocessing](https://docs.python.org/ja/3/library/multiprocessing.html) to enable parallelization.
-While it hides the complexity of `multiprocessing` through its pre-implemented `local_process` method, this method relies solely on Python’s standard library, making it understandable and customizable if needed.
+- `process_client` (a static method that child processes call)
+- `get_shared_data` (to prepare the data shared across processes)
+- `uplink_package` (to send final results back to the server)
 
-The methods that need to be implemented are `uplink_package`, `get_shared_data`, and `process_client`.
-Among these, `process_client` is a static method executed by child processes, while `get_shared_data` returns data shared among clients.
-This shared data is stored on disk, and only the path to it is passed to child processes via shared memory.
-This approach avoids the complexity of shared memory management while enabling efficient and simple parallelization.
+By storing shared data on disk instead of passing it directly, you avoid complex shared memory management.
+This design makes it straightforward to enable parallel training.
 
-The complete source code can be found [here](https://github.com/kitsuya0828/BlazeFL/tree/main/examples/step-by-step-dsfl/algorithm/dsfl.py).
-
+The complete source code is [here](https://github.com/kitsuya0828/BlazeFL/tree/main/examples/step-by-step-dsfl/algorithm/dsfl.py).
 
 ## Implementing a Pipeline
 
-Although optional, combining these components into a `Pipeline` allows for flexible execution of simulations. 
-
-For instance, a pipeline for DS-FL can be implemented as follows:
+A `Pipeline` is optional but can help organize your simulation workflow, making it easy to run experiments in a structured way.
+Here’s an example DS-FL pipeline:
 
 ```python
 class DSFLPipeline:
@@ -403,23 +412,23 @@ class DSFLPipeline:
         logging.info("Done!")
 ```
 
-This implementation is nearly identical to a pipeline for FedAvg, demonstrating its reusability across multiple methods.
-In this example, metrics are saved and visualized using TensorBoard, but other tools like [W&B](https://github.com/wandb/wandb) can also be used.
+This pipeline is almost identical to one you might create for FedAvg or another standard FL method, showcasing how reusable these components are. 
 
-By initializing the ServerHandler and ParallelClientTrainer and passing them into the pipeline, you can execute the simulation.
+In this snippet, we use TensorBoard via SummaryWriter for logging, but you’re free to use alternatives like [W&B](https://github.com/wandb/wandb).
 
-The full source code is available [here](https://github.com/kitsuya0828/BlazeFL/tree/main/examples/step-by-step-dsfl/main.py).
+You can see the full source code [here](https://github.com/kitsuya0828/BlazeFL/tree/main/examples/step-by-step-dsfl/main.py).
 
 ## Running the Simulation
-In this example, [Hydra](https://hydra.cc/) is used to configure hyperparameters, but you can choose your own method for configuration.
 
-Run the DS-FL simulation with the following command:
+In our example, we use [Hydra](https://hydra.cc/) to handle hyperparameter configuration. Feel free to use any configuration system you like.
+
+To run the DS-FL simulation:
 
 ```bash
 uv run python main.py +algorithm=dsfl
 ```
 
-You can also visualize the metrics using TensorBoard:
+To visualize metrics in TensorBoard:
 
 ```bash
 make visualize
@@ -427,9 +436,10 @@ make visualize
 
 ## Conclusion
 
+In this tutorial, you learned how to implement DS-FL using BlazeFL.
+BlazeFL’s flexible design eliminates many constraints seen in traditional FL frameworks, allowing you to mix and match components like building blocks.
 
-In this tutorial, we demonstrated how to implement DS-FL using BlazeFL.
-BlazeFL offers a level of flexibility not found in traditional FL frameworks, enabling you to implement your unique FL methods by combining components like puzzle pieces.
+Use BlazeFL to implement your own original FL methods and drive pioneering research in Federated Learning.
+Push boundaries and have fun exploring innovative approaches!
 
-Take advantage of BlazeFL to implement your original FL methods and push the boundaries of innovative research.
 
