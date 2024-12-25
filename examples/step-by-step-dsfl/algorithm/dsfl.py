@@ -1,5 +1,6 @@
 import random
 from collections import defaultdict
+from collections.abc import Mapping
 from copy import deepcopy
 from dataclasses import dataclass
 from pathlib import Path
@@ -250,6 +251,12 @@ class DSFLDiskSharedData:
     state_path: Path
 
 
+@dataclass
+class DSFLClientState:
+    random: RandomState
+    model: Mapping[str, torch.Tensor]
+
+
 class DSFLParallelClientTrainer(
     ParallelClientTrainer[DSFLUplinkPackage, DSFLDownlinkPackage, DSFLDiskSharedData]
 ):
@@ -295,14 +302,18 @@ class DSFLParallelClientTrainer(
         data = torch.load(path, weights_only=False)
         assert isinstance(data, DSFLDiskSharedData)
 
+        state: DSFLClientState | None = None
         if data.state_path.exists():
             state = torch.load(data.state_path, weights_only=False)
-            assert isinstance(state, RandomState)
-            RandomState.set_random_state(state)
+            assert isinstance(state, DSFLClientState)
+            RandomState.set_random_state(state.random)
         else:
             seed_everything(data.seed, device=data.device)
 
         model = data.model_selector.select_model(data.model_name)
+
+        if state is not None:
+            model.load_state_dict(state.model)
 
         # Distill
         openset = data.dataset.get_dataset(type_="open", cid=None)
@@ -364,7 +375,11 @@ class DSFLParallelClientTrainer(
         )
 
         torch.save(package, path)
-        torch.save(RandomState.get_random_state(device=data.device), data.state_path)
+        state = DSFLClientState(
+            random=RandomState.get_random_state(device=data.device),
+            model=model.state_dict(),
+        )
+        torch.save(state, data.state_path)
         return path
 
     @staticmethod
