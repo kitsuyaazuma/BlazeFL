@@ -384,7 +384,6 @@ class FedAvgDiskSharedData:
         epochs (int): Number of local training epochs per client.
         batch_size (int): Batch size for local training.
         lr (float): Learning rate for the optimizer.
-        device (str): Device to run the model on ('cpu' or 'cuda').
         cid (int): Client ID.
         seed (int): Seed for reproducibility.
         payload (FedAvgDownlinkPackage): Downlink package with global model parameters.
@@ -397,7 +396,6 @@ class FedAvgDiskSharedData:
     epochs: int
     batch_size: int
     lr: float
-    device: str
     cid: int
     seed: int
     payload: FedAvgDownlinkPackage
@@ -463,7 +461,7 @@ class FedAvgParallelClientTrainer(
             seed (int): Seed for reproducibility.
             num_parallels (int): Number of parallel processes for training.
         """
-        super().__init__(num_parallels, share_dir)
+        super().__init__(num_parallels, share_dir, device)
         self.model_selector = model_selector
         self.model_name = model_name
         self.state_dir = state_dir
@@ -476,11 +474,8 @@ class FedAvgParallelClientTrainer(
         self.num_clients = num_clients
         self.seed = seed
 
-        if self.device == "cuda":
-            self.device_count = torch.cuda.device_count()
-
     @staticmethod
-    def process_client(path: Path) -> Path:
+    def process_client(path: Path, device: str) -> Path:
         """
         Process a single client's local training and evaluation.
 
@@ -490,6 +485,7 @@ class FedAvgParallelClientTrainer(
         Args:
             path (Path): Path to the shared data file containing client-specific
             information.
+            device (str): Device to use for processing.
 
         Returns:
             Path: Path to the file with the processed results.
@@ -502,7 +498,7 @@ class FedAvgParallelClientTrainer(
             assert isinstance(state, RandomState)
             RandomState.set_random_state(state)
         else:
-            seed_everything(data.seed, device=data.device)
+            seed_everything(data.seed, device=device)
 
         model = data.model_selector.select_model(data.model_name)
         train_loader = data.dataset.get_dataloader(
@@ -514,7 +510,7 @@ class FedAvgParallelClientTrainer(
             model=model,
             model_parameters=data.payload.model_parameters,
             train_loader=train_loader,
-            device=data.device,
+            device=device,
             epochs=data.epochs,
             lr=data.lr,
         )
@@ -526,11 +522,11 @@ class FedAvgParallelClientTrainer(
         loss, acc = FedAvgParallelClientTrainer.evaulate(
             model=model,
             test_loader=val_loader,
-            device=data.device,
+            device=device,
         )
         package.metadata = {"loss": loss, "acc": acc}
         torch.save(package, path)
-        torch.save(RandomState.get_random_state(device=data.device), data.state_path)
+        torch.save(RandomState.get_random_state(device=device), data.state_path)
         return path
 
     @staticmethod
@@ -639,10 +635,6 @@ class FedAvgParallelClientTrainer(
         Returns:
             FedAvgDiskSharedData: Shared data structure for the client.
         """
-        if self.device == "cuda":
-            device = f"cuda:{cid % self.device_count}"
-        else:
-            device = self.device
         data = FedAvgDiskSharedData(
             model_selector=self.model_selector,
             model_name=self.model_name,
@@ -650,7 +642,6 @@ class FedAvgParallelClientTrainer(
             epochs=self.epochs,
             batch_size=self.batch_size,
             lr=self.lr,
-            device=device,
             cid=cid,
             seed=self.seed,
             payload=payload,
