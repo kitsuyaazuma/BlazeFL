@@ -70,17 +70,21 @@ class ParallelClientTrainer(
         NotImplementedError: If the abstract methods are not implemented in a subclass.
     """
 
-    def __init__(self, num_parallels: int, share_dir: Path) -> None:
+    def __init__(self, num_parallels: int, share_dir: Path, device: str) -> None:
         """
         Initialize the ParallelClientTrainer with parallelism settings.
 
         Args:
             num_parallels (int): Number of parallel processes to use.
             share_dir (Path): Directory path for sharing data between processes.
+            device (str): Device to use for processing clients.
         """
         self.num_parallels = num_parallels
         self.share_dir = share_dir
         self.share_dir.mkdir(parents=True, exist_ok=True)
+        self.device = device
+        if self.device == "cuda":
+            self.device_count = torch.cuda.device_count()
         self.cache: list[UplinkPackage] = []
 
     @abstractmethod
@@ -97,14 +101,29 @@ class ParallelClientTrainer(
         """
         ...
 
+    def get_client_device(self, cid: int) -> str:
+        """
+        Retrieve the device to use for processing a given client.
+
+        Args:
+            cid (int): Client ID.
+
+        Returns:
+            str: The device to use for processing the client.
+        """
+        if self.device == "cuda":
+            return f"cuda:{cid % self.device_count}"
+        return self.device
+
     @staticmethod
     @abstractmethod
-    def process_client(path: Path) -> Path:
+    def process_client(path: Path, device: str) -> Path:
         """
         Process a single client based on the provided path.
 
         Args:
             path (Path): Path to the client's data file.
+            device (str): Device to use for processing.
 
         Returns:
             Path: Path to the processed client's data file.
@@ -131,8 +150,9 @@ class ParallelClientTrainer(
         for cid in cid_list:
             path = self.share_dir.joinpath(f"{cid}.pkl")
             data = self.get_shared_data(cid, payload)
+            device = self.get_client_device(cid)
             torch.save(data, path)
-            jobs.append(pool.apply_async(self.process_client, (path,)))
+            jobs.append(pool.apply_async(self.process_client, (path, device)))
 
         for job in tqdm(jobs, desc="Client", leave=False):
             path = job.get()

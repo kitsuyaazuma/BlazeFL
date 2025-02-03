@@ -34,8 +34,9 @@ class DummyParallelClientTrainer(
         return DiskSharedData(cid=cid, payload=payload)
 
     @staticmethod
-    def process_client(path: Path) -> Path:
+    def process_client(path: Path, device: str) -> Path:
         data = torch.load(path, weights_only=False)
+        _ = device
         downlink_package = data.payload
 
         dummy_uplink_package = UplinkPackage(
@@ -52,7 +53,7 @@ def test_parallel_client_trainer(
     tmp_path: Path, num_parallels: int, cid_list: list[int]
 ) -> None:
     trainer = DummyParallelClientTrainer(
-        num_parallels=num_parallels, share_dir=tmp_path
+        num_parallels=num_parallels, share_dir=tmp_path, device="cpu"
     )
 
     dummy_payload = DownlinkPackage(message="<server_to_client>")
