@@ -13,7 +13,7 @@ from torch.utils.tensorboard.writer import SummaryWriter
 from torchvision import transforms
 
 from blazefl.contrib import (
-    FedAvgParalleClientTrainer,
+    FedAvgParallelClientTrainer,
     FedAvgSerialClientTrainer,
     FedAvgServerHandler,
 )
@@ -24,7 +24,7 @@ class FedAvgPipeline:
     def __init__(
         self,
         handler: FedAvgServerHandler,
-        trainer: FedAvgSerialClientTrainer | FedAvgParalleClientTrainer,
+        trainer: FedAvgSerialClientTrainer | FedAvgParallelClientTrainer,
         writer: SummaryWriter,
     ) -> None:
         self.handler = handler
@@ -117,7 +117,7 @@ def main(
             batch_size=cfg.batch_size,
         )
     else:
-        trainer = FedAvgParalleClientTrainer(
+        trainer = FedAvgParallelClientTrainer(
             model_selector=model_selector,
             model_name=cfg.model_name,
             dataset=dataset,

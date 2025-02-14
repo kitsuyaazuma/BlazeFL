@@ -244,7 +244,6 @@ class DSFLDiskSharedData:
     kd_epochs: int
     kd_batch_size: int
     kd_lr: float
-    device: str
     cid: int
     seed: int
     payload: DSFLDownlinkPackage
@@ -278,7 +277,7 @@ class DSFLParallelClientTrainer(
         seed: int,
         num_parallels: int,
     ) -> None:
-        super().__init__(num_parallels, share_dir)
+        super().__init__(num_parallels, share_dir, device)
         self.model_selector = model_selector
         self.model_name = model_name
         self.state_dir = state_dir
@@ -298,7 +297,7 @@ class DSFLParallelClientTrainer(
             self.device_count = torch.cuda.device_count()
 
     @staticmethod
-    def process_client(path: Path) -> Path:
+    def process_client(path: Path, device: str) -> Path:
         data = torch.load(path, weights_only=False)
         assert isinstance(data, DSFLDiskSharedData)
 
@@ -308,7 +307,7 @@ class DSFLParallelClientTrainer(
             assert isinstance(state, DSFLClientState)
             RandomState.set_random_state(state.random)
         else:
-            seed_everything(data.seed, device=data.device)
+            seed_everything(data.seed, device=device)
 
         model = data.model_selector.select_model(data.model_name)
 
@@ -328,7 +327,7 @@ class DSFLParallelClientTrainer(
                 kd_epochs=data.kd_epochs,
                 kd_batch_size=data.kd_batch_size,
                 kd_lr=data.kd_lr,
-                device=data.device,
+                device=device,
             )
 
         # Train
@@ -340,7 +339,7 @@ class DSFLParallelClientTrainer(
         DSFLParallelClientTrainer.train(
             model=model,
             train_loader=train_loader,
-            device=data.device,
+            device=device,
             epochs=data.epochs,
             lr=data.lr,
         )
@@ -353,7 +352,7 @@ class DSFLParallelClientTrainer(
         soft_labels = DSFLParallelClientTrainer.predict(
             model=model,
             open_loader=open_loader,
-            device=data.device,
+            device=device,
         )
 
         # Evaluate
@@ -365,7 +364,7 @@ class DSFLParallelClientTrainer(
         loss, acc = DSFLServerHandler.evaulate(
             model=model,
             test_loader=val_loader,
-            device=data.device,
+            device=device,
         )
 
         package = DSFLUplinkPackage(
@@ -376,7 +375,7 @@ class DSFLParallelClientTrainer(
 
         torch.save(package, path)
         state = DSFLClientState(
-            random=RandomState.get_random_state(device=data.device),
+            random=RandomState.get_random_state(device=device),
             model=model.state_dict(),
         )
         torch.save(state, data.state_path)
@@ -430,10 +429,6 @@ class DSFLParallelClientTrainer(
     def get_shared_data(
         self, cid: int, payload: DSFLDownlinkPackage
     ) -> DSFLDiskSharedData:
-        if self.device == "cuda":
-            device = f"cuda:{cid % self.device_count}"
-        else:
-            device = self.device
         data = DSFLDiskSharedData(
             model_selector=self.model_selector,
             model_name=self.model_name,
@@ -444,7 +439,6 @@ class DSFLParallelClientTrainer(
             kd_epochs=self.kd_epochs,
             kd_batch_size=self.kd_batch_size,
             kd_lr=self.kd_lr,
-            device=device,
             cid=cid,
             seed=self.seed,
             payload=payload,
