@@ -18,7 +18,7 @@ sdist = { url = "https://files.pythonhosted.org/packages/3e/38/7859ff46355f76f8d
 
 [[package]]
 name = "blazefl"
-version = "0.1.2"
+version = "1.0.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "numpy" },
@@ -26,9 +26,9 @@ dependencies = [
     { name = "tqdm" },
     { name = "types-tqdm" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/0d/97/717f3a5d634c0f6cfe4fbf24171440d4bec2ef5ad86c11340a18eafb773b/blazefl-0.1.2.tar.gz", hash = "sha256:b3b267213e6555bfe5d65952cb427064d37ba3c189493da95d0231484677083a", size = 592108 }
+sdist = { url = "https://files.pythonhosted.org/packages/02/04/f04c7a34f28519dcf992df63f1a4af989a650cd9e7adab4ec08729e2b074/blazefl-1.0.0.tar.gz", hash = "sha256:1583919f58bafee315d9d27f156ffa92fdf374930851a5b9c6049a50da478470", size = 635173 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/6c/51/c0b6507f309fb05b71213abf06adfa4c4084b29ab487af4f435ac90e6457/blazefl-0.1.2-py3-none-any.whl", hash = "sha256:442f7f2bc30bacbab1dc646a77b0be41cea7db251d443f636ff0621c3179a76f", size = 19994 },
+    { url = "https://files.pythonhosted.org/packages/ab/be/92a70e6628a4d9a2a0b9cdd2652d2fbcbc70123d4dba2423457668b67085/blazefl-1.0.0-py3-none-any.whl", hash = "sha256:ebba52356bae07c9a46886d85448c33104ad6ee6133e4d2f9ed595aabb2afcac", size = 20123 },
 ]
 
 [[package]]
