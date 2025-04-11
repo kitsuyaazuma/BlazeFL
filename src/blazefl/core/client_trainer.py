@@ -1,4 +1,5 @@
 import multiprocessing as mp
+import signal
 from abc import ABC, abstractmethod
 from multiprocessing.pool import ApplyResult
 from pathlib import Path
@@ -144,21 +145,21 @@ class ParallelClientTrainer(
         Returns:
             None
         """
-        pool = mp.Pool(processes=self.num_parallels)
-        jobs: list[ApplyResult] = []
+        with mp.Pool(
+            processes=self.num_parallels,
+            initializer=signal.signal,
+            initargs=(signal.SIGINT, signal.SIG_IGN),
+        ) as pool:
+            jobs: list[ApplyResult] = []
+            for cid in cid_list:
+                path = self.share_dir.joinpath(f"{cid}.pkl")
+                data = self.get_shared_data(cid, payload)
+                device = self.get_client_device(cid)
+                torch.save(data, path)
+                jobs.append(pool.apply_async(self.process_client, (path, device)))
 
-        for cid in cid_list:
-            path = self.share_dir.joinpath(f"{cid}.pkl")
-            data = self.get_shared_data(cid, payload)
-            device = self.get_client_device(cid)
-            torch.save(data, path)
-            jobs.append(pool.apply_async(self.process_client, (path, device)))
-
-        for job in tqdm(jobs, desc="Client", leave=False):
-            path = job.get()
-            assert isinstance(path, Path)
-            package = torch.load(path, weights_only=False)
-            self.cache.append(package)
-
-        pool.close()
-        pool.join()
+            for job in tqdm(jobs, desc="Client", leave=False):
+                path = job.get()
+                assert isinstance(path, Path)
+                package = torch.load(path, weights_only=False)
+                self.cache.append(package)
