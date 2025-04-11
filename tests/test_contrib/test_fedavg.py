@@ -1,3 +1,10 @@
+import os
+import signal
+import time
+from contextlib import suppress
+from multiprocessing import Process
+
+import psutil
 import pytest
 import torch
 from torch.utils.data import DataLoader, Dataset
@@ -64,7 +71,7 @@ def partitioned_dataset():
 
 @pytest.fixture
 def device():
-    return "cpu"
+    return "cuda" if torch.cuda.is_available() else "cpu"
 
 
 @pytest.fixture
@@ -177,3 +184,78 @@ def test_server_and_parallel_integration(
         assert server.round == round_
 
     assert server.if_stop() is True
+
+
+def run_local_process(trainer, downlink, cids):
+    with suppress(KeyboardInterrupt):
+        trainer.local_process(downlink, cids)
+
+
+def test_server_and_parallel_integration_keyboard_interrupt(
+    model_selector, partitioned_dataset, device, tmp_share_dir, tmp_state_dir
+):
+    model_name = "dummy"
+    global_round = 1
+    num_clients = 10
+    sample_ratio = 1.0
+    epochs = 10**5
+    batch_size = 2
+    lr = 0.01
+    seed = 42
+    num_parallels = 10
+
+    server = FedAvgServerHandler(
+        model_selector=model_selector,
+        model_name=model_name,
+        dataset=partitioned_dataset,
+        global_round=global_round,
+        num_clients=num_clients,
+        sample_ratio=sample_ratio,
+        device=device,
+    )
+
+    trainer = FedAvgParallelClientTrainer(
+        model_selector=model_selector,
+        model_name=model_name,
+        share_dir=tmp_share_dir,
+        state_dir=tmp_state_dir,
+        dataset=partitioned_dataset,
+        device=device,
+        num_clients=num_clients,
+        epochs=epochs,
+        batch_size=batch_size,
+        lr=lr,
+        seed=seed,
+        num_parallels=num_parallels,
+    )
+
+    cids = server.sample_clients()
+    downlink = server.downlink_package()
+
+    proc = Process(target=run_local_process, args=(trainer, downlink, cids))
+    proc.start()
+    assert proc.pid is not None
+
+    spawned_pids = []
+    timeout = 5
+    start_time = time.time()
+    while proc.is_alive():
+        spawned_pids = []
+        for child in psutil.Process(proc.pid).children(recursive=True):
+            spawned_pids.append(child.pid)
+        if len(spawned_pids) == num_parallels:
+            break
+        if time.time() - start_time > timeout:
+            raise AssertionError("Timeout reached while waiting for spawned processes.")
+    assert proc.is_alive()
+
+    os.kill(proc.pid, signal.SIGINT)
+
+    proc.join(timeout=5)
+    assert not proc.is_alive()
+
+    orphan_pids = []
+    for pid in spawned_pids:
+        if psutil.pid_exists(pid):
+            orphan_pids.append(pid)
+    assert len(orphan_pids) == 0
