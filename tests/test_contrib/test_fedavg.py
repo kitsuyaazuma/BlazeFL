@@ -1,8 +1,8 @@
 import os
 import signal
+import time
 from contextlib import suppress
 from multiprocessing import Process
-from time import sleep
 
 import psutil
 import pytest
@@ -237,7 +237,7 @@ def test_server_and_parallel_integration_keyboard_interrupt(
     assert proc.pid is not None
 
     spawned_pids = []
-    timeout = 5  # seconds
+    timeout = 5
     start_time = time.time()
     while proc.is_alive():
         spawned_pids = []
