@@ -237,13 +237,16 @@ def test_server_and_parallel_integration_keyboard_interrupt(
     assert proc.pid is not None
 
     spawned_pids = []
+    timeout = 5  # seconds
+    start_time = time.time()
     while proc.is_alive():
         spawned_pids = []
         for child in psutil.Process(proc.pid).children(recursive=True):
             spawned_pids.append(child.pid)
         if len(spawned_pids) == num_parallels:
             break
-        sleep(0.1)
+        if time.time() - start_time > timeout:
+            raise AssertionError("Timeout reached while waiting for spawned processes.")
     assert proc.is_alive()
 
     os.kill(proc.pid, signal.SIGINT)
