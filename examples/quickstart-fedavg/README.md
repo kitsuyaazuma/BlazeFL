@@ -7,7 +7,7 @@
 Begin by cloning the BlazeFL repository and navigating to the `quickstart-fedavg` directory:
 
 ```bash
-git clone https://github.com/kitsuya0828/blazefl.git
+git clone https://github.com/kitsuyaazuma/blazefl.git
 cd blazefl/examples/quickstart-fedavg
 ```
 
@@ -35,4 +35,4 @@ uv run python main.py num_parallels=3
 
 Adjust the `num_parallels` parameter based on your system’s specifications to optimize performance.
 
-For additional options and configurations, please refer to the [`config.yaml`](https://github.com/kitsuya0828/BlazeFL/blob/main/examples/quickstart-fedavg/config/config.yaml) file.
+For additional options and configurations, please refer to the [`config.yaml`](https://github.com/kitsuyaazuma/BlazeFL/blob/main/examples/quickstart-fedavg/config/config.yaml) file.

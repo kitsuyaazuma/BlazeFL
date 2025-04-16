@@ -4,7 +4,7 @@ version = "1.0.1"
 description = "A blazing-fast and lightweight simulation framework for Federated Learning."
 readme = "README.md"
 authors = [
-    { name = "kitsuya0828", email = "kitsuyaazuma@gmail.com" }
+    { name = "kitsuyaazuma", email = "kitsuyaazuma@gmail.com" }
 ]
 requires-python = ">=3.12"
 classifiers = [

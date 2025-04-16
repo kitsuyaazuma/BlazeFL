@@ -1,4 +1,4 @@
-<div align="center"><img src="https://raw.githubusercontent.com/kitsuya0828/BlazeFL/refs/heads/main/docs/imgs/logo.svg" width=600></div>
+<div align="center"><img src="https://raw.githubusercontent.com/kitsuyaazuma/BlazeFL/refs/heads/main/docs/imgs/logo.svg" width=600></div>
 <div align="center">A blazing-fast and lightweight simulation framework for Federated Learning</div>
 <br>
 <div align="center">
@@ -27,7 +27,7 @@
 
 BlazeFL enhances performance by storing shared parameters on disk instead of shared memory, enabling efficient parameter sharing across processes, simplifying memory management, and reducing overhead.
 
-<div align="center"><img src="https://raw.githubusercontent.com/kitsuya0828/BlazeFL/refs/heads/main/docs/imgs/architecture.png"></div>
+<div align="center"><img src="https://raw.githubusercontent.com/kitsuyaazuma/BlazeFL/refs/heads/main/docs/imgs/architecture.png"></div>
 
 ## Quick Start
 
@@ -47,9 +47,9 @@ pip install blazefl
 
 ### Running Examples
 
-Quick start code is in [examples/quickstart-fedavg](https://github.com/kitsuya0828/BlazeFL/tree/main/examples/quickstart-fedavg).
+Quick start code is in [examples/quickstart-fedavg](https://github.com/kitsuyaazuma/BlazeFL/tree/main/examples/quickstart-fedavg).
 
-For a more detailed implementation guide, checkout the [examples/step-by-step-dsfl](https://github.com/kitsuya0828/BlazeFL/tree/main/examples/step-by-step-dsfl).
+For a more detailed implementation guide, checkout the [examples/step-by-step-dsfl](https://github.com/kitsuyaazuma/BlazeFL/tree/main/examples/step-by-step-dsfl).
 
 
 ## FL Simulation Benchmarks
@@ -86,8 +86,8 @@ Benchmarks were conducted using Google Cloud’s Compute Engine with the followi
 For benchmarking purposes, we utilized Flower’s [Quickstart Example](https://github.com/adap/flower/tree/main/examples/quickstart-pytorch) as a baseline to evaluate BlazeFL’s performance and efficiency.
 
 <div style="display: flex; justify-content: center; align-items: center;">
-  <img src="https://raw.githubusercontent.com/kitsuya0828/BlazeFL/refs/heads/main/docs/imgs/benchmark_cnn.png" alt="CNN" width="45%" />
-  <img src="https://raw.githubusercontent.com/kitsuya0828/BlazeFL/refs/heads/main/docs/imgs/benchmark_resnet18.png" alt="ResNet18" width="45%" />
+  <img src="https://raw.githubusercontent.com/kitsuyaazuma/BlazeFL/refs/heads/main/docs/imgs/benchmark_cnn.png" alt="CNN" width="45%" />
+  <img src="https://raw.githubusercontent.com/kitsuyaazuma/BlazeFL/refs/heads/main/docs/imgs/benchmark_resnet18.png" alt="ResNet18" width="45%" />
 </div>
 
 
@@ -111,6 +111,6 @@ We gladly accept pull requests! Before submitting a pull request, please ensure 
 
 ### Code of Conduct
 
-Please note that this project is governed by our [Code of Conduct](https://github.com/kitsuya0828/BlazeFL/blob/main/CODE_OF_CONDUCT.md). By participating, you are expected to uphold this code. Please report any unacceptable behavior.
+Please note that this project is governed by our [Code of Conduct](https://github.com/kitsuyaazuma/BlazeFL/blob/main/CODE_OF_CONDUCT.md). By participating, you are expected to uphold this code. Please report any unacceptable behavior.
 
 Thank you for contributing to our project!
