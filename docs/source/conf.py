@@ -7,8 +7,8 @@
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 project = "BlazeFL"
-copyright = "2024, kitsuya0828"
-author = "kitsuya0828"
+copyright = "2024, kitsuyaazuma"
+author = "kitsuyaazuma"
 release = "0.1.1"
 
 # -- General configuration ---------------------------------------------------

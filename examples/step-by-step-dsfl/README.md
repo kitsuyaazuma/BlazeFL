@@ -87,7 +87,7 @@ Meanwhile, `get_dataloader` wraps that dataset in a `DataLoader`.
 This design is flexible enough even for methods like DS-FL, which rely on an open dataset.
 If you don’t need one of these methods, you can simply implement it with `pass`.
 
-You can view the complete source code [here](https://github.com/kitsuya0828/BlazeFL/tree/main/examples/step-by-step-dsfl/dataset).
+You can view the complete source code [here](https://github.com/kitsuyaazuma/BlazeFL/tree/main/examples/step-by-step-dsfl/dataset).
 
 ## Implementing a ModelSelector
 
@@ -117,7 +117,7 @@ class DSFLModelSelector(ModelSelector):
 Here, `select_model` simply takes a string (the model name) and returns the corresponding `nn.Module`.
 You can store useful information (like the number of classes) as attributes in your `ModelSelector`.
 
-The full source code can be found [here](https://github.com/kitsuya0828/BlazeFL/tree/main/examples/step-by-step-dsfl/models).
+The full source code can be found [here](https://github.com/kitsuyaazuma/BlazeFL/tree/main/examples/step-by-step-dsfl/models).
 
 ## Defining DownlinkPackage and UplinkPackage
 
@@ -232,7 +232,7 @@ If any of these methods are unnecessary for your approach, you can simply implem
 
 In DS-FL, the `global_update` method aggregates the soft labels from clients and distills them into a global model.
 However, you can flexibly place any custom operations in this or other methods.
-You can find more details in the [official documentation](https://kitsuya0828.github.io/BlazeFL/generated/blazefl.core.ServerHandler.html#blazefl.core.ServerHandler).
+You can find more details in the [official documentation](https://kitsuyaazuma.github.io/BlazeFL/generated/blazefl.core.ServerHandler.html#blazefl.core.ServerHandler).
 
 
 ## Implementing a ParallelClientTrainer
@@ -378,7 +378,7 @@ You mainly need to implement:
 By storing shared data on disk instead of passing it directly, you avoid complex shared memory management.
 This design makes it straightforward to enable parallel training.
 
-The complete source code is [here](https://github.com/kitsuya0828/BlazeFL/tree/main/examples/step-by-step-dsfl/algorithm/dsfl.py).
+The complete source code is [here](https://github.com/kitsuyaazuma/BlazeFL/tree/main/examples/step-by-step-dsfl/algorithm/dsfl.py).
 
 ## Implementing a Pipeline
 
@@ -424,7 +424,7 @@ This pipeline is almost identical to one you might create for FedAvg or another 
 
 In this snippet, we use TensorBoard via SummaryWriter for logging, but you’re free to use alternatives like [W&B](https://github.com/wandb/wandb).
 
-You can see the full source code [here](https://github.com/kitsuya0828/BlazeFL/tree/main/examples/step-by-step-dsfl/main.py).
+You can see the full source code [here](https://github.com/kitsuyaazuma/BlazeFL/tree/main/examples/step-by-step-dsfl/main.py).
 
 ## Running the Simulation
 

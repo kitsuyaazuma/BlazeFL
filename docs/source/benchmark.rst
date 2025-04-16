@@ -31,8 +31,8 @@ For benchmarking purposes, we utilized Flower’s `Quickstart Example <https://g
 .. raw:: html
 
    <div style="display: flex; justify-content: center; gap: 10px; align-items: center;">
-       <img src="https://raw.githubusercontent.com/kitsuya0828/BlazeFL/refs/heads/main/docs/imgs/benchmark_cnn.png"
+       <img src="https://raw.githubusercontent.com/kitsuyaazuma/BlazeFL/refs/heads/main/docs/imgs/benchmark_cnn.png"
             alt="CNN Benchmark" style="width: 45%;">
-       <img src="https://raw.githubusercontent.com/kitsuya0828/BlazeFL/refs/heads/main/docs/imgs/benchmark_resnet18.png"
+       <img src="https://raw.githubusercontent.com/kitsuyaazuma/BlazeFL/refs/heads/main/docs/imgs/benchmark_resnet18.png"
             alt="ResNet18 Benchmark" style="width: 45%;">
    </div>

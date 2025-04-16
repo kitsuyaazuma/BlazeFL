@@ -22,7 +22,7 @@ We gladly accept pull requests! Before submitting a pull request, please ensure 
 Code of Conduct
 ---------------
 
-Please note that this project is governed by our `Code of Conduct <https://github.com/kitsuya0828/BlazeFL/blob/main/CODE_OF_CONDUCT.md>`_.
+Please note that this project is governed by our `Code of Conduct <https://github.com/kitsuyaazuma/BlazeFL/blob/main/CODE_OF_CONDUCT.md>`_.
 By participating, you are expected to uphold this code. Please report any unacceptable behavior.
 
 Thank you for contributing to our project!

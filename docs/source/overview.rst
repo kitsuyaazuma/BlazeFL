@@ -21,7 +21,7 @@ How BlazeFL Works
 
 BlazeFL enhances performance by storing shared parameters on disk instead of shared memory, enabling efficient parameter sharing across processes, simplifying memory management, and reducing overhead.
 
-.. image:: https://raw.githubusercontent.com/kitsuya0828/BlazeFL/refs/heads/main/docs/imgs/architecture.png
+.. image:: https://raw.githubusercontent.com/kitsuyaazuma/BlazeFL/refs/heads/main/docs/imgs/architecture.png
    :align: center
 
 
