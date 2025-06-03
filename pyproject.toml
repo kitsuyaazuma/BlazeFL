@@ -1,6 +1,6 @@
 [project]
 name = "blazefl"
-version = "1.0.1"
+version = "1.0.2"
 description = "A blazing-fast and lightweight simulation framework for Federated Learning."
 readme = "README.md"
 authors = [
@@ -16,7 +16,7 @@ classifiers = [
   "Programming Language :: Python :: 3 :: Only",
 ]
 dependencies = [
-  "numpy>=2.2.0",
+  "numpy>=2.2.6",
   "torch>=2.5.1",
   "tqdm>=4.67.1",
   "types-tqdm>=4.67.0.20241119",
@@ -32,6 +32,7 @@ testpaths = ["tests"]
 [dependency-groups]
 dev = [
     "mypy>=1.13.0",
+    "pre-commit>=4.2.0",
     "psutil>=7.0.0",
     "pytest>=8.3.4",
     "ruff>=0.8.2",

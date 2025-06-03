@@ -49,7 +49,7 @@ class FedAvgPipeline:
             avg_acc = sum(meta["acc"] for meta in metadata_list) / len(metadata_list)
 
             logging.info(
-                f"Round: {round_}, Loss: {avg_loss:.2f}, " f"Accuracy: {avg_acc:.2f}"
+                f"Round: {round_}, Loss: {avg_loss:.2f}, Accuracy: {avg_acc:.2f}"
             )
             self.writer.add_scalar("Loss", avg_loss, round_)
             self.writer.add_scalar("Accuracy", avg_acc, round_)
