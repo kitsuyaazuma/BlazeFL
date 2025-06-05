@@ -16,4 +16,4 @@ class DSFLModelSelector(ModelSelector):
             case "resnet18":
                 return resnet18(num_classes=self.num_classes)
             case _:
-                raise ValueError
+                raise ValueError(f"Invalid model name: {model_name}")
