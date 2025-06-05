@@ -98,14 +98,12 @@ dev = [
     { name = "psutil" },
     { name = "pytest" },
     { name = "ruff" },
+    { name = "types-psutil" },
 ]
 docs = [
     { name = "sphinx" },
     { name = "sphinx-autobuild" },
     { name = "sphinx-book-theme" },
-]
-test = [
-    { name = "types-psutil" },
 ]
 
 [package.metadata]
@@ -123,13 +121,14 @@ dev = [
     { name = "psutil", specifier = ">=7.0.0" },
     { name = "pytest", specifier = ">=8.3.4" },
     { name = "ruff", specifier = ">=0.8.2" },
+    { name = "types-psutil", specifier = ">=7.0.0.20250601" },
 ]
 docs = [
     { name = "sphinx", specifier = ">=8.1.3" },
     { name = "sphinx-autobuild", specifier = ">=2024.10.3" },
     { name = "sphinx-book-theme", specifier = ">=1.1.3" },
 ]
-test = [{ name = "types-psutil", specifier = ">=7.0.0.20250601" }]
+test = []
 
 [[package]]
 name = "certifi"
