@@ -1,9 +1,8 @@
 import torch
+from blazefl.core import ModelSelector
 from torch import nn
 from torch.nn import functional as F
 from torchvision.models import resnet18
-
-from blazefl.core import ModelSelector
 
 
 class FedAvgModelSelector(ModelSelector):
