@@ -46,6 +46,9 @@ docs = [
     "sphinx-autobuild>=2024.10.3",
 ]
 
+[tool.ruff]
+exclude = ["blazefl"]
+
 [tool.ruff.lint]
 select = [
     "E",  # pycodestyle
