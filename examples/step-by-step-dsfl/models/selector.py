@@ -1,7 +1,7 @@
+from blazefl.core import ModelSelector
 from torch import nn
 from torchvision.models import resnet18
 
-from blazefl.core import ModelSelector
 from models.cnn import CNN
 
 

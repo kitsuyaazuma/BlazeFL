@@ -7,10 +7,6 @@ from pathlib import Path
 
 import torch
 import torch.nn.functional as F
-from dataset import DSFLPartitionedDataset
-from models import DSFLModelSelector
-from torch.utils.data import DataLoader, Subset
-
 from blazefl.core import (
     ParallelClientTrainer,
     ServerHandler,
@@ -20,6 +16,10 @@ from blazefl.utils import (
     RandomState,
     seed_everything,
 )
+from torch.utils.data import DataLoader, Subset
+
+from dataset import DSFLPartitionedDataset
+from models import DSFLModelSelector
 
 
 @dataclass
@@ -356,14 +356,14 @@ class DSFLParallelClientTrainer(
         )
 
         # Evaluate
-        val_loader = data.dataset.get_dataloader(
-            type_="val",
+        test_loader = data.dataset.get_dataloader(
+            type_="test",
             cid=data.cid,
             batch_size=data.batch_size,
         )
         loss, acc = DSFLServerHandler.evaulate(
             model=model,
-            test_loader=val_loader,
+            test_loader=test_loader,
             device=device,
         )
 

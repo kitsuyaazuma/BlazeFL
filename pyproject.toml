@@ -29,6 +29,13 @@ build-backend = "hatchling.build"
 [tool.basedpyright]
 typeCheckingMode = "standard"
 
+[tool.mypy]
+exclude = [
+    "blazefl",
+    "docs",
+    "examples",
+]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 
@@ -45,9 +52,15 @@ docs = [
     "sphinx>=8.1.3",
     "sphinx-autobuild>=2024.10.3",
 ]
+test = [
+    "types-psutil>=7.0.0.20250601",
+]
 
 [tool.ruff]
-exclude = ["blazefl"]
+exclude = [
+    "blazefl",
+    "examples",
+]
 
 [tool.ruff.lint]
 select = [
@@ -64,4 +77,5 @@ fixable = ["ALL"]
 [tool.uv.workspace]
 members = [
     "examples/quickstart-fedavg",
+    "examples/step-by-step-dsfl",
 ]

@@ -6,6 +6,7 @@ requires-python = ">=3.12"
 members = [
     "blazefl",
     "quickstart-fedavg",
+    "step-by-step-dsfl",
 ]
 
 [[package]]
@@ -103,6 +104,9 @@ docs = [
     { name = "sphinx-autobuild" },
     { name = "sphinx-book-theme" },
 ]
+test = [
+    { name = "types-psutil" },
+]
 
 [package.metadata]
 requires-dist = [
@@ -125,6 +129,7 @@ docs = [
     { name = "sphinx-autobuild", specifier = ">=2024.10.3" },
     { name = "sphinx-book-theme", specifier = ">=1.1.3" },
 ]
+test = [{ name = "types-psutil", specifier = ">=7.0.0.20250601" }]
 
 [[package]]
 name = "certifi"
@@ -1046,6 +1051,33 @@ wheels = [
 ]
 
 [[package]]
+name = "step-by-step-dsfl"
+version = "0.1.0"
+source = { virtual = "examples/step-by-step-dsfl" }
+dependencies = [
+    { name = "blazefl" },
+    { name = "hydra-core" },
+    { name = "tensorboard" },
+    { name = "torchvision" },
+]
+
+[package.dev-dependencies]
+dev = [
+    { name = "mypy" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "blazefl", editable = "." },
+    { name = "hydra-core", specifier = ">=1.3.2" },
+    { name = "tensorboard", specifier = ">=2.19.0" },
+    { name = "torchvision", specifier = ">=0.22.0" },
+]
+
+[package.metadata.requires-dev]
+dev = [{ name = "mypy", specifier = ">=1.13.0" }]
+
+[[package]]
 name = "sympy"
 version = "1.14.0"
 source = { registry = "https://pypi.org/simple" }
@@ -1177,6 +1209,15 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/11/53/ce18470914ab6cfbec9384ee565d23c4d1c55f0548160b1c7b33000b11fd/triton-3.3.0-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:b68c778f6c4218403a6bd01be7484f6dc9e20fe2083d22dd8aef33e3b87a10a3", size = 156504509, upload_time = "2025-04-09T20:27:40.413Z" },
     { url = "https://files.pythonhosted.org/packages/7d/74/4bf2702b65e93accaa20397b74da46fb7a0356452c1bb94dbabaf0582930/triton-3.3.0-cp313-cp313-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:47bc87ad66fa4ef17968299acacecaab71ce40a238890acc6ad197c3abe2b8f1", size = 156516468, upload_time = "2025-04-09T20:27:48.196Z" },
     { url = "https://files.pythonhosted.org/packages/0a/93/f28a696fa750b9b608baa236f8225dd3290e5aff27433b06143adc025961/triton-3.3.0-cp313-cp313t-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:ce4700fc14032af1e049005ae94ba908e71cd6c2df682239aed08e49bc71b742", size = 156580729, upload_time = "2025-04-09T20:27:55.424Z" },
+]
+
+[[package]]
+name = "types-psutil"
+version = "7.0.0.20250601"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/c8/af/767b92be7de4105f5e2e87a53aac817164527c4a802119ad5b4e23028f7c/types_psutil-7.0.0.20250601.tar.gz", hash = "sha256:71fe9c4477a7e3d4f1233862f0877af87bff057ff398f04f4e5c0ca60aded197", size = 20297, upload_time = "2025-06-01T03:25:16.698Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/8d/85/864c663a924a34e0d87bd10ead4134bb4ab6269fa02daaa5dd644ac478c5/types_psutil-7.0.0.20250601-py3-none-any.whl", hash = "sha256:0c372e2d1b6529938a080a6ba4a9358e3dfc8526d82fabf40c1ef9325e4ca52e", size = 23106, upload_time = "2025-06-01T03:25:15.386Z" },
 ]
 
 [[package]]

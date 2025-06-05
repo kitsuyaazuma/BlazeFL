@@ -69,7 +69,7 @@ def test_filtered_dataset_assert_length_mismatch() -> None:
 def test_filtered_dataset_empty_indices() -> None:
     original_data = [0, 1, 2]
     original_targets = [10, 11, 12]
-    indices = []  # Empty indices
+    indices: list[int] = []  # Empty indices
 
     dataset = FilteredDataset(indices, original_data, original_targets)
     assert len(dataset) == 0
