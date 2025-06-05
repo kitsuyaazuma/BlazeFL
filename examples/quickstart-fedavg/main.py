@@ -5,19 +5,18 @@ from pathlib import Path
 import hydra
 import torch
 import torch.multiprocessing as mp
-from dataset import PartitionedCIFAR10
-from hydra.core import hydra_config
-from models import FedAvgModelSelector
-from omegaconf import DictConfig, OmegaConf
-from torch.utils.tensorboard.writer import SummaryWriter
-from torchvision import transforms
-
 from blazefl.contrib import (
     FedAvgParallelClientTrainer,
     FedAvgSerialClientTrainer,
     FedAvgServerHandler,
 )
 from blazefl.utils import seed_everything
+from hydra.core import hydra_config
+from omegaconf import DictConfig, OmegaConf
+from torch.utils.tensorboard.writer import SummaryWriter
+
+from dataset import PartitionedCIFAR10
+from models import FedAvgModelSelector
 
 
 class FedAvgPipeline:
@@ -42,29 +41,21 @@ class FedAvgPipeline:
             self.trainer.local_process(broadcast, sampled_clients)
             uploads = self.trainer.uplink_package()
 
-            metadata_list = [
-                pack.metadata for pack in uploads if pack.metadata is not None
-            ]
-            avg_loss = sum(meta["loss"] for meta in metadata_list) / len(metadata_list)
-            avg_acc = sum(meta["acc"] for meta in metadata_list) / len(metadata_list)
-
-            logging.info(
-                f"Round: {round_}, Loss: {avg_loss:.2f}, Accuracy: {avg_acc:.2f}"
-            )
-            self.writer.add_scalar("Loss", avg_loss, round_)
-            self.writer.add_scalar("Accuracy", avg_acc, round_)
-
             # server side
             for pack in uploads:
                 self.handler.load(pack)
 
-        logging.info("Done!")
+            summary = self.handler.get_summary()
+            for key, value in summary.items():
+                self.writer.add_scalar(key, value, round_)
+            formatted_summary = ", ".join(f"{k}: {v:.3f}" for k, v in summary.items())
+            logging.info(f"round: {round_}, {formatted_summary}")
+
+        logging.info("done!")
 
 
 @hydra.main(version_base=None, config_path="config", config_name="config")
-def main(
-    cfg: DictConfig,
-):
+def main(cfg: DictConfig):
     print(OmegaConf.to_yaml(cfg))
 
     log_dir = hydra_config.HydraConfig.get().runtime.output_dir
@@ -76,7 +67,12 @@ def main(
     share_dir = Path(cfg.share_dir).joinpath(timestamp)
     state_dir = Path(cfg.state_dir).joinpath(timestamp)
 
-    device = "cuda" if torch.cuda.is_available() else "cpu"
+    device = "cpu"
+    if torch.cuda.is_available():
+        device = "cuda"
+    elif torch.backends.mps.is_available():
+        device = "mps"
+    logging.info(f"device: {device}")
 
     seed_everything(cfg.seed, device=device)
 
@@ -84,18 +80,13 @@ def main(
         root=dataset_root_dir,
         path=dataset_split_dir,
         num_clients=cfg.num_clients,
-        num_shards=cfg.num_shards,
-        dir_alpha=cfg.dir_alpha,
         seed=cfg.seed,
         partition=cfg.partition,
-        transform=transforms.Compose(
-            [
-                transforms.ToTensor(),
-                transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
-            ]
-        ),
+        num_shards=cfg.num_shards,
+        dir_alpha=cfg.dir_alpha,
     )
     model_selector = FedAvgModelSelector(num_classes=10)
+
     handler = FedAvgServerHandler(
         model_selector=model_selector,
         model_name=cfg.model_name,
@@ -104,7 +95,9 @@ def main(
         num_clients=cfg.num_clients,
         device=device,
         sample_ratio=cfg.sample_ratio,
+        batch_size=cfg.batch_size,
     )
+    trainer: FedAvgSerialClientTrainer | FedAvgParallelClientTrainer | None = None
     if cfg.serial:
         trainer = FedAvgSerialClientTrainer(
             model_selector=model_selector,
@@ -135,9 +128,9 @@ def main(
     try:
         pipeline.main()
     except KeyboardInterrupt:
-        logging.info("KeyboardInterrupt")
+        logging.info("KeyboardInterrupt: Stopping the pipeline.")
     except Exception as e:
-        logging.error(e)
+        logging.exception(f"An error occurred: {e}")
 
 
 if __name__ == "__main__":

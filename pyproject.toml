@@ -26,6 +26,9 @@ dependencies = [
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
+[tool.basedpyright]
+typeCheckingMode = "standard"
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 
@@ -54,3 +57,8 @@ select = [
 ]
 ignore = []
 fixable = ["ALL"]
+
+[tool.uv.workspace]
+members = [
+    "examples/quickstart-fedavg",
+]

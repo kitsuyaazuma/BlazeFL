@@ -103,6 +103,7 @@ def test_server_and_serial_integration(model_selector, partitioned_dataset, devi
         num_clients=num_clients,
         sample_ratio=sample_ratio,
         device=device,
+        batch_size=batch_size,
     )
 
     trainer = FedAvgSerialClientTrainer(
@@ -153,6 +154,7 @@ def test_server_and_parallel_integration(
         num_clients=num_clients,
         sample_ratio=sample_ratio,
         device=device,
+        batch_size=batch_size,
     )
 
     trainer = FedAvgParallelClientTrainer(
@@ -212,6 +214,7 @@ def test_server_and_parallel_integration_keyboard_interrupt(
         num_clients=num_clients,
         sample_ratio=sample_ratio,
         device=device,
+        batch_size=batch_size,
     )
 
     trainer = FedAvgParallelClientTrainer(
