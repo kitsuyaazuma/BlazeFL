@@ -3,7 +3,7 @@ format:
 
 lint:
 	uv run ruff check . --fix
-	uv run mypy . --ignore-missing-imports
+	uv run mypy . 
 
 visualize:
 	uv run tensorboard --logdir outputs

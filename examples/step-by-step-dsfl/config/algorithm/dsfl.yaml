@@ -1,3 +1,4 @@
+name: dsfl
 kd_epochs: 5
 kd_batch_size: 50
 kd_lr: 0.1

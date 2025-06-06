@@ -2,8 +2,7 @@ model_name: cnn
 num_clients: 100
 global_round: 5
 sample_ratio: 1.0
-partition: shards
-num_shards: 200
+partition: client_inner_dirichlet
 dir_alpha: 1.0
 seed: 42
 epochs: 5

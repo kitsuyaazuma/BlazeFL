@@ -1,15 +1,10 @@
 # Step-by-Step Tutorial: DS-FL
 
-> [!NOTE]
-> **Work in Progress**  
-> This tutorial is currently under development! We welcome any feedback or contributions from those who try it out. Feel free to submit pull requests, open issues, or share your ideas in the repository to help make this tutorial even better.
-
-Welcome to this step-by-step tutorial on implementing [DS-FL](https://doi.ieeecomputersociety.org/10.1109/TMC.2021.3070013) using BlazeFL!
+Welcome to this step-by-step tutorial on implementing DS-FL[^1] using BlazeFL!
 DS-FL is a Federated Learning (FL) method that utilizes knowledge distillation by sharing model outputs on an open dataset. 
 
 Thanks to BlazeFL's highly modular design, you can easily implement both standard FL approaches (like parameter exchange) and advanced methods (like distillation-based FL).
 Think of it as assembling puzzle pieces to create your own unique FL methods—beyond the constraints of traditional frameworks.
-
 
 In this tutorial, we’ll guide you through creating a DS-FL pipeline using BlazeFL.
 By following along, you’ll be able to develop your own original FL methods.
@@ -23,17 +18,17 @@ mkdir step-by-step-dsfl
 cd step-by-step-dsfl
 ```
 
-Next, Initialize the projcet with [uv](https://github.com/astral-sh/uv) (or any other package manager of your choice).
+Next, Initialize the project with [uv](https://github.com/astral-sh/uv) (or any other package manager of your choice).
 
 ```bash
-uv init
+uv init --python 3.12
 ```
 
 Then, create a virtual environment and install BlazeFL. 
 
 ```bash
-uv venv --python 3.12
-source .venv/bin/activate
+uv venv
+# source .venv/bin/activate
 uv add blazefl
 ```
 
@@ -53,22 +48,28 @@ class DSFLPartitionedDataset(PartitionedDataset):
 
     def get_dataset(self, type_: str, cid: int | None) -> Dataset:
         match type_:
-            case "train" | "val":
+            case "train":
                 dataset = torch.load(
                     self.path.joinpath(type_, f"{cid}.pkl"),
                     weights_only=False,
                 )
             case "open":
                 dataset = torch.load(
-                    self.path.joinpath(type_, "open.pkl"),
+                    self.path.joinpath(f"{type_}.pkl"),
                     weights_only=False,
                 )
             case "test":
-                dataset = torch.load(
-                    self.path.joinpath(type_, "test.pkl"), weights_only=False
-                )
+                if cid is not None:
+                    dataset = torch.load(
+                        self.path.joinpath(type_, f"{cid}.pkl"),
+                        weights_only=False,
+                    )
+                else:
+                    dataset = torch.load(
+                        self.path.joinpath(type_, "default.pkl"), weights_only=False
+                    )
             case _:
-                raise ValueError("Invalid type_")
+                raise ValueError(f"Invalid dataset type: {type_}")
         assert isinstance(dataset, Dataset)
         return dataset
 
@@ -82,12 +83,12 @@ class DSFLPartitionedDataset(PartitionedDataset):
         return data_loader
 ```
 
-Here, `get_dataset` returns a `Dataset` for the specified type (e.g., "train", "val", "open", or "test") and client ID.
+Here, `get_dataset` returns a `Dataset` for the specified type (e.g., "train", "open", or "test") and client ID.
 Meanwhile, `get_dataloader` wraps that dataset in a `DataLoader`.
 This design is flexible enough even for methods like DS-FL, which rely on an open dataset.
 If you don’t need one of these methods, you can simply implement it with `pass`.
 
-You can view the complete source code [here](https://github.com/kitsuyaazuma/BlazeFL/tree/main/examples/step-by-step-dsfl/dataset).
+You can view the complete source code [here](https://github.com/kitsuyaazuma/blazefl/tree/main/examples/step-by-step-dsfl/dataset).
 
 ## Implementing a ModelSelector
 
@@ -111,13 +112,13 @@ class DSFLModelSelector(ModelSelector):
             case "resnet18":
                 return resnet18(num_classes=self.num_classes)
             case _:
-                raise ValueError
+                raise ValueError(f"Invalid model name: {model_name}")
 ```
 
 Here, `select_model` simply takes a string (the model name) and returns the corresponding `nn.Module`.
 You can store useful information (like the number of classes) as attributes in your `ModelSelector`.
 
-The full source code can be found [here](https://github.com/kitsuyaazuma/BlazeFL/tree/main/examples/step-by-step-dsfl/models).
+The full source code can be found [here](https://github.com/kitsuyaazuma/blazefl/tree/main/examples/step-by-step-dsfl/models).
 
 ## Defining DownlinkPackage and UplinkPackage
 
@@ -140,6 +141,7 @@ class DSFLDownlinkPackage:
     indices: torch.Tensor | None
     next_indices: torch.Tensor
 ```
+
 Using Python’s `@dataclass` makes these classes concise and easy to maintain.
 Including explicit types for each attribute also improves IDE support for debugging.
 
@@ -153,7 +155,7 @@ Below is an example for DS-FL:
 
 ```python
 class DSFLServerHandler(ServerHandler[DSFLUplinkPackage, DSFLDownlinkPackage]):
-    # Omited for brevity
+    # Omitted for brevity
 
     def sample_clients(self) -> list[int]:
         sampled_clients = random.sample(
@@ -199,12 +201,12 @@ class DSFLServerHandler(ServerHandler[DSFLUplinkPackage, DSFLDownlinkPackage]):
 
         DSFLServerHandler.distill(
             self.model,
+            self.kd_optimizer,
             self.dataset,
             global_soft_labels,
             global_indices,
             self.kd_epochs,
             self.kd_batch_size,
-            self.kd_lr,
             self.device,
         )
 
@@ -228,11 +230,11 @@ The `ServerHandler` class requires five core methods to be implemented:
 - `global_update`
 - `downlink_package`
 
-If any of these methods are unnecessary for your approach, you can simply implement them with `pass`.
+If any of these methods are not needed for your approach, you can simply implement them with `pass`.
 
 In DS-FL, the `global_update` method aggregates the soft labels from clients and distills them into a global model.
-However, you can flexibly place any custom operations in this or other methods.
-You can find more details in the [official documentation](https://kitsuyaazuma.github.io/BlazeFL/generated/blazefl.core.ServerHandler.html#blazefl.core.ServerHandler).
+However, you have the flexibility to place any custom operations in these or other methods.
+You can find more details in the [official documentation](https://kitsuyaazuma.github.io/blazefl/generated/blazefl.core.ServerHandler.html#blazefl.core.ServerHandler).
 
 
 ## Implementing a ParallelClientTrainer
@@ -245,36 +247,42 @@ An example DS-FL client trainer looks like this:
 ```python
 @dataclass
 class DSFLDiskSharedData:
-    # Omited for brevity
+    # Omitted for brevity
 
 class DSFLParallelClientTrainer(
     ParallelClientTrainer[DSFLUplinkPackage, DSFLDownlinkPackage, DSFLDiskSharedData]
 ):
-    # Omited for brevity
+    # Omitted for brevity
 
     @staticmethod
     def process_client(path: Path) -> Path:
         data = torch.load(path, weights_only=False)
         assert isinstance(data, DSFLDiskSharedData)
 
+        model = data.model_selector.select_model(data.model_name)
+        optimizer = torch.optim.SGD(model.parameters(), lr=data.lr)
+        kd_optimizer: torch.optim.SGD | None = None
+
         state: DSFLClientState | None = None
         if data.state_path.exists():
             state = torch.load(data.state_path, weights_only=False)
             assert isinstance(state, DSFLClientState)
             RandomState.set_random_state(state.random)
-        else:
-            seed_everything(data.seed, device=data.device)
-
-        model = data.model_selector.select_model(data.model_name)
-
-        if state is not None:
             model.load_state_dict(state.model)
+            optimizer.load_state_dict(state.optimizer)
+            if state.kd_optimizer is not None:
+                kd_optimizer = torch.optim.SGD(model.parameters(), lr=data.kd_lr)
+                kd_optimizer.load_state_dict(state.kd_optimizer)
+        else:
+            seed_everything(data.seed, device=device)
 
         # Distill
-        openset = data.dataset.get_dataset(type_="open", cid=None)
+        open_dataset = data.dataset.get_dataset(type_="open", cid=None)
         if data.payload.indices is not None and data.payload.soft_labels is not None:
             global_soft_labels = list(torch.unbind(data.payload.soft_labels, dim=0))
             global_indices = data.payload.indices.tolist()
+            if kd_optimizer is None:
+                kd_optimizer = torch.optim.SGD(model.parameters(), lr=data.kd_lr)
             DSFLServerHandler.distill(
                 model=model,
                 dataset=data.dataset,
@@ -302,7 +310,7 @@ class DSFLParallelClientTrainer(
 
         # Predict
         open_loader = DataLoader(
-            Subset(openset, data.payload.next_indices.tolist()),
+            Subset(open_dataset, data.payload.next_indices.tolist()),
             batch_size=data.batch_size,
         )
         soft_labels = DSFLParallelClientTrainer.predict(
@@ -312,19 +320,19 @@ class DSFLParallelClientTrainer(
         )
 
         # Evaluate
-        val_loader = data.dataset.get_dataloader(
+        test_loader = data.dataset.get_dataloader(
             type_="val",
             cid=data.cid,
             batch_size=data.batch_size,
         )
-        loss, acc = DSFLServerHandler.evaulate(
+        loss, acc = DSFLServerHandler.evaluate(
             model=model,
-            test_loader=val_loader,
+            test_loader=test_loader,
             device=data.device,
         )
 
         package = DSFLUplinkPackage(
-            soft_labels=torch.stack(soft_labels),
+            soft_labels=soft_labels,
             indices=data.payload.next_indices,
             metadata={"loss": loss, "acc": acc},
         )
@@ -333,6 +341,8 @@ class DSFLParallelClientTrainer(
         state = DSFLClientState(
             random=RandomState.get_random_state(device=data.device),
             model=model.state_dict(),
+            optimizer=optimizer.state_dict(),
+            kd_optimizer=kd_optimizer.state_dict() if kd_optimizer else None,
         )
         torch.save(state, data.state_path)
         return path
@@ -340,10 +350,6 @@ class DSFLParallelClientTrainer(
     def get_shared_data(
         self, cid: int, payload: DSFLDownlinkPackage
     ) -> DSFLDiskSharedData:
-        if self.device == "cuda":
-            device = f"cuda:{cid % self.device_count}"
-        else:
-            device = self.device
         data = DSFLDiskSharedData(
             model_selector=self.model_selector,
             model_name=self.model_name,
@@ -354,7 +360,6 @@ class DSFLParallelClientTrainer(
             kd_epochs=self.kd_epochs,
             kd_batch_size=self.kd_batch_size,
             kd_lr=self.kd_lr,
-            device=device,
             cid=cid,
             seed=self.seed,
             payload=payload,
@@ -371,14 +376,14 @@ class DSFLParallelClientTrainer(
 This class uses Python’s standard library multiprocessing (wrapped under BlazeFL) to train clients concurrently.
 You mainly need to implement:
 
-- `process_client` (a static method that child processes call)
+- `process_client` (a static method called by child processes)
 - `get_shared_data` (to prepare the data shared across processes)
 - `uplink_package` (to send final results back to the server)
 
 By storing shared data on disk instead of passing it directly, you avoid complex shared memory management.
 This design makes it straightforward to enable parallel training.
 
-The complete source code is [here](https://github.com/kitsuyaazuma/BlazeFL/tree/main/examples/step-by-step-dsfl/algorithm/dsfl.py).
+The complete source code is [here](https://github.com/kitsuyaazuma/blazefl/tree/main/examples/step-by-step-dsfl/algorithm/dsfl.py).
 
 ## Implementing a Pipeline
 
@@ -450,4 +455,4 @@ BlazeFL’s flexible design eliminates many constraints seen in traditional FL f
 Use BlazeFL to implement your own original FL methods and drive pioneering research in Federated Learning.
 Push boundaries and have fun exploring innovative approaches!
 
-
+[^1]: S. Itahara, T. Nishio, Y. Koda, M. Morikura, and K. Yamamoto, "Distillation-Based Semi-Supervised Federated Learning for Communication-Efficient Collaborative Training With Non-IID Private Data," IEEE Trans. Mobile Comput., vol. 22, no. 1, pp. 191–205, 2023.

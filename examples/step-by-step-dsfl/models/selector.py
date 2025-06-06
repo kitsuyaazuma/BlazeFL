@@ -1,7 +1,7 @@
+from blazefl.core import ModelSelector
 from torch import nn
 from torchvision.models import resnet18
 
-from blazefl.core import ModelSelector
 from models.cnn import CNN
 
 
@@ -16,4 +16,4 @@ class DSFLModelSelector(ModelSelector):
             case "resnet18":
                 return resnet18(num_classes=self.num_classes)
             case _:
-                raise ValueError
+                raise ValueError(f"Invalid model name: {model_name}")

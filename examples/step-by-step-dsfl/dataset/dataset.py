@@ -1,18 +1,18 @@
-from collections.abc import Callable, Sized
+from collections.abc import Sized
 from pathlib import Path
 
+import numpy as np
 import torch
 import torchvision
-from fedlab.utils.dataset.functional import (
-    balance_split,
-    client_inner_dirichlet_partition,
-    shards_partition,
-)
-from sklearn.model_selection import train_test_split
-from torch.utils.data import DataLoader, Dataset
-
 from blazefl.core import PartitionedDataset
 from blazefl.utils import FilteredDataset
+from torch.utils.data import DataLoader, Dataset
+from torchvision import transforms
+
+from dataset.functional import (
+    balance_split,
+    client_inner_dirichlet_partition_faster,
+)
 
 
 class DSFLPartitionedDataset(PartitionedDataset):
@@ -24,134 +24,147 @@ class DSFLPartitionedDataset(PartitionedDataset):
         seed: int,
         partition: str,
         open_size: int,
-        num_shards: int | None = None,
-        dir_alpha: float | None = None,
-        val_ratio: float = 0.2,
-        transform: Callable | None = None,
-        target_transform: Callable | None = None,
+        dir_alpha: float,
     ) -> None:
         self.root = root
         self.path = path
         self.num_clients = num_clients
         self.seed = seed
         self.partition = partition
-        self.num_shards = num_shards
         self.dir_alpha = dir_alpha
-        self.val_ratio = val_ratio
         self.open_size = open_size
-        self.transform = transform
-        self.target_transform = target_transform
+
+        self.train_transform = transforms.Compose(
+            [
+                transforms.ToTensor(),
+                transforms.RandomHorizontalFlip(p=0.5),
+                transforms.RandomCrop(32, padding=4),
+                transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
+            ]
+        )
+        self.test_transform = transforms.Compose(
+            [
+                transforms.ToTensor(),
+                transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
+            ]
+        )
 
         self._preprocess()
 
     def _preprocess(self):
         self.root.mkdir(parents=True, exist_ok=True)
-        trainset = torchvision.datasets.CIFAR10(
+        train_dataset = torchvision.datasets.CIFAR10(
             root=self.root,
             train=True,
             download=True,
         )
-        openset = torchvision.datasets.CIFAR100(
+        open_dataset = torchvision.datasets.CIFAR100(
             root=self.root,
             train=True,
             download=True,
         )
-        testset = torchvision.datasets.CIFAR10(
+        test_dataset = torchvision.datasets.CIFAR10(
             root=self.root,
             train=False,
             download=True,
         )
-        for type_ in ["train", "val", "open", "test"]:
+        for type_ in ["train", "open", "test"]:
             self.path.joinpath(type_).mkdir(parents=True)
 
         match self.partition:
             case "client_inner_dirichlet":
-                assert self.dir_alpha is not None
-                client_dict = client_inner_dirichlet_partition(
-                    targets=trainset.targets,
+                client_dict, class_priors = client_inner_dirichlet_partition_faster(
+                    targets=train_dataset.targets,
                     num_clients=self.num_clients,
                     num_classes=10,
                     dir_alpha=self.dir_alpha,
                     client_sample_nums=balance_split(
-                        len(trainset.targets), self.num_clients
+                        num_clients=self.num_clients,
+                        num_samples=len(train_dataset.targets),
                     ),
+                    verbose=False,
                 )
-            case "shards":
-                assert self.num_shards is not None
-                client_dict = shards_partition(
-                    targets=trainset.targets,
+                test_client_dict, _ = client_inner_dirichlet_partition_faster(
+                    targets=test_dataset.targets,
                     num_clients=self.num_clients,
-                    num_shards=self.num_shards,
+                    num_classes=10,
+                    dir_alpha=self.dir_alpha,
+                    client_sample_nums=balance_split(
+                        num_clients=self.num_clients,
+                        num_samples=len(test_dataset.targets),
+                    ),
+                    class_priors=class_priors,
+                    verbose=False,
                 )
             case _:
-                raise ValueError("Invalid partition")
+                raise ValueError(f"Invalid partition: {self.partition}")
 
         for cid, indices in client_dict.items():
-            train_indices, val_indices = train_test_split(
-                indices,
-                test_size=self.val_ratio,
+            client_train_dataset = FilteredDataset(
+                indices.tolist(),
+                train_dataset.data,
+                train_dataset.targets,
+                transform=self.train_transform,
             )
-            client_trainset = FilteredDataset(
-                train_indices,
-                trainset.data,
-                trainset.targets,
-                transform=self.transform,
-                target_transform=self.target_transform,
-            )
-            torch.save(client_trainset, self.path.joinpath("train", f"{cid}.pkl"))
-            client_valset = FilteredDataset(
-                val_indices,
-                trainset.data,
-                trainset.targets,
-                transform=self.transform,
-                target_transform=self.target_transform,
-            )
-            torch.save(client_valset, self.path.joinpath("val", f"{cid}.pkl"))
+            torch.save(client_train_dataset, self.path.joinpath("train", f"{cid}.pkl"))
 
-        open_indices, _ = train_test_split(
-            range(len(openset)),
-            test_size=1 - self.open_size / len(openset),
+        for cid, indices in test_client_dict.items():
+            client_test_dataset = FilteredDataset(
+                indices.tolist(),
+                test_dataset.data,
+                test_dataset.targets,
+                transform=self.test_transform,
+            )
+            torch.save(client_test_dataset, self.path.joinpath("test", f"{cid}.pkl"))
+
+        open_indices = np.random.choice(
+            len(open_dataset),
+            size=self.open_size,
         )
         torch.save(
             FilteredDataset(
-                open_indices,
-                openset.data,
+                open_indices.tolist(),
+                open_dataset.data,
                 original_targets=None,
-                transform=self.transform,
-                target_transform=self.target_transform,
+                transform=self.train_transform,
             ),
-            self.path.joinpath("open", "open.pkl"),
+            self.path.joinpath("open.pkl"),
         )
 
         torch.save(
             FilteredDataset(
-                list(range(len(testset))),
-                testset.data,
-                testset.targets,
-                transform=self.transform,
-                target_transform=self.target_transform,
+                list(range(len(test_dataset))),
+                test_dataset.data,
+                test_dataset.targets,
+                transform=self.test_transform,
             ),
-            self.path.joinpath("test", "test.pkl"),
+            self.path.joinpath("test", "default.pkl"),
         )
 
     def get_dataset(self, type_: str, cid: int | None) -> Dataset:
         match type_:
-            case "train" | "val":
+            case "train":
                 dataset = torch.load(
                     self.path.joinpath(type_, f"{cid}.pkl"),
                     weights_only=False,
                 )
             case "open":
                 dataset = torch.load(
-                    self.path.joinpath(type_, "open.pkl"),
+                    self.path.joinpath(f"{type_}.pkl"),
                     weights_only=False,
                 )
             case "test":
-                dataset = torch.load(
-                    self.path.joinpath(type_, "test.pkl"), weights_only=False
-                )
+                if cid is not None:
+                    dataset = torch.load(
+                        self.path.joinpath(type_, f"{cid}.pkl"),
+                        weights_only=False,
+                    )
+                else:
+                    dataset = torch.load(
+                        self.path.joinpath(type_, "default.pkl"), weights_only=False
+                    )
             case _:
-                raise ValueError("Invalid type_")
+                raise ValueError(f"Invalid dataset type: {type_}")
         assert isinstance(dataset, Dataset)
         return dataset
 

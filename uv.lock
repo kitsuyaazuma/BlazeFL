@@ -6,6 +6,7 @@ requires-python = ">=3.12"
 members = [
     "blazefl",
     "quickstart-fedavg",
+    "step-by-step-dsfl",
 ]
 
 [[package]]
@@ -87,7 +88,6 @@ dependencies = [
     { name = "numpy" },
     { name = "torch" },
     { name = "tqdm" },
-    { name = "types-tqdm" },
 ]
 
 [package.dev-dependencies]
@@ -97,6 +97,8 @@ dev = [
     { name = "psutil" },
     { name = "pytest" },
     { name = "ruff" },
+    { name = "types-psutil" },
+    { name = "types-tqdm" },
 ]
 docs = [
     { name = "sphinx" },
@@ -109,7 +111,6 @@ requires-dist = [
     { name = "numpy", specifier = ">=2.2.6" },
     { name = "torch", specifier = ">=2.5.1" },
     { name = "tqdm", specifier = ">=4.67.1" },
-    { name = "types-tqdm", specifier = ">=4.67.0.20241119" },
 ]
 
 [package.metadata.requires-dev]
@@ -119,12 +120,15 @@ dev = [
     { name = "psutil", specifier = ">=7.0.0" },
     { name = "pytest", specifier = ">=8.3.4" },
     { name = "ruff", specifier = ">=0.8.2" },
+    { name = "types-psutil", specifier = ">=7.0.0.20250601" },
+    { name = "types-tqdm", specifier = ">=4.67.0.20250516" },
 ]
 docs = [
     { name = "sphinx", specifier = ">=8.1.3" },
     { name = "sphinx-autobuild", specifier = ">=2024.10.3" },
     { name = "sphinx-book-theme", specifier = ">=1.1.3" },
 ]
+test = []
 
 [[package]]
 name = "certifi"
@@ -1046,6 +1050,33 @@ wheels = [
 ]
 
 [[package]]
+name = "step-by-step-dsfl"
+version = "0.1.0"
+source = { virtual = "examples/step-by-step-dsfl" }
+dependencies = [
+    { name = "blazefl" },
+    { name = "hydra-core" },
+    { name = "tensorboard" },
+    { name = "torchvision" },
+]
+
+[package.dev-dependencies]
+dev = [
+    { name = "mypy" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "blazefl", editable = "." },
+    { name = "hydra-core", specifier = ">=1.3.2" },
+    { name = "tensorboard", specifier = ">=2.19.0" },
+    { name = "torchvision", specifier = ">=0.22.0" },
+]
+
+[package.metadata.requires-dev]
+dev = [{ name = "mypy", specifier = ">=1.13.0" }]
+
+[[package]]
 name = "sympy"
 version = "1.14.0"
 source = { registry = "https://pypi.org/simple" }
@@ -1180,15 +1211,24 @@ wheels = [
 ]
 
 [[package]]
+name = "types-psutil"
+version = "7.0.0.20250601"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/c8/af/767b92be7de4105f5e2e87a53aac817164527c4a802119ad5b4e23028f7c/types_psutil-7.0.0.20250601.tar.gz", hash = "sha256:71fe9c4477a7e3d4f1233862f0877af87bff057ff398f04f4e5c0ca60aded197", size = 20297, upload_time = "2025-06-01T03:25:16.698Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/8d/85/864c663a924a34e0d87bd10ead4134bb4ab6269fa02daaa5dd644ac478c5/types_psutil-7.0.0.20250601-py3-none-any.whl", hash = "sha256:0c372e2d1b6529938a080a6ba4a9358e3dfc8526d82fabf40c1ef9325e4ca52e", size = 23106, upload_time = "2025-06-01T03:25:15.386Z" },
+]
+
+[[package]]
 name = "types-requests"
-version = "2.32.0.20241016"
+version = "2.32.0.20250602"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "urllib3" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/fa/3c/4f2a430c01a22abd49a583b6b944173e39e7d01b688190a5618bd59a2e22/types-requests-2.32.0.20241016.tar.gz", hash = "sha256:0d9cad2f27515d0e3e3da7134a1b6f28fb97129d86b867f24d9c726452634d95", size = 18065, upload_time = "2024-10-16T02:46:10.818Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/48/b0/5321e6eeba5d59e4347fcf9bf06a5052f085c3aa0f4876230566d6a4dc97/types_requests-2.32.0.20250602.tar.gz", hash = "sha256:ee603aeefec42051195ae62ca7667cd909a2f8128fdf8aad9e8a5219ecfab3bf", size = 23042, upload_time = "2025-06-02T03:15:02.958Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/d7/01/485b3026ff90e5190b5e24f1711522e06c79f4a56c8f4b95848ac072e20f/types_requests-2.32.0.20241016-py3-none-any.whl", hash = "sha256:4195d62d6d3e043a4eaaf08ff8a62184584d2e8684e9d2aa178c7915a7da3747", size = 15836, upload_time = "2024-10-16T02:46:09.734Z" },
+    { url = "https://files.pythonhosted.org/packages/da/18/9b782980e575c6581d5c0c1c99f4c6f89a1d7173dad072ee96b2756c02e6/types_requests-2.32.0.20250602-py3-none-any.whl", hash = "sha256:f4f335f87779b47ce10b8b8597b409130299f6971ead27fead4fe7ba6ea3e726", size = 20638, upload_time = "2025-06-02T03:15:01.959Z" },
 ]
 
 [[package]]
