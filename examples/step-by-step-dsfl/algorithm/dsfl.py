@@ -320,7 +320,7 @@ class DSFLParallelClientTrainer(
             seed_everything(data.seed, device=device)
 
         # Distill
-        openset = data.dataset.get_dataset(type_="open", cid=None)
+        open_dataset = data.dataset.get_dataset(type_="open", cid=None)
         if data.payload.indices is not None and data.payload.soft_labels is not None:
             global_soft_labels = list(torch.unbind(data.payload.soft_labels, dim=0))
             global_indices = data.payload.indices.tolist()
@@ -353,7 +353,7 @@ class DSFLParallelClientTrainer(
 
         # Predict
         open_loader = DataLoader(
-            Subset(openset, data.payload.next_indices.tolist()),
+            Subset(open_dataset, data.payload.next_indices.tolist()),
             batch_size=data.batch_size,
         )
         soft_labels = DSFLParallelClientTrainer.predict(
