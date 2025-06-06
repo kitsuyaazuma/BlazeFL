@@ -201,12 +201,12 @@ class DSFLServerHandler(ServerHandler[DSFLUplinkPackage, DSFLDownlinkPackage]):
 
         DSFLServerHandler.distill(
             self.model,
+            self.kd_optimizer,
             self.dataset,
             global_soft_labels,
             global_indices,
             self.kd_epochs,
             self.kd_batch_size,
-            self.kd_lr,
             self.device,
         )
 
@@ -259,24 +259,30 @@ class DSFLParallelClientTrainer(
         data = torch.load(path, weights_only=False)
         assert isinstance(data, DSFLDiskSharedData)
 
+        model = data.model_selector.select_model(data.model_name)
+        optimizer = torch.optim.SGD(model.parameters(), lr=data.lr)
+        kd_optimizer: torch.optim.SGD | None = None
+
         state: DSFLClientState | None = None
         if data.state_path.exists():
             state = torch.load(data.state_path, weights_only=False)
             assert isinstance(state, DSFLClientState)
             RandomState.set_random_state(state.random)
-        else:
-            seed_everything(data.seed, device=data.device)
-
-        model = data.model_selector.select_model(data.model_name)
-
-        if state is not None:
             model.load_state_dict(state.model)
+            optimizer.load_state_dict(state.optimizer)
+            if state.kd_optimizer is not None:
+                kd_optimizer = torch.optim.SGD(model.parameters(), lr=data.kd_lr)
+                kd_optimizer.load_state_dict(state.kd_optimizer)
+        else:
+            seed_everything(data.seed, device=device)
 
         # Distill
         openset = data.dataset.get_dataset(type_="open", cid=None)
         if data.payload.indices is not None and data.payload.soft_labels is not None:
             global_soft_labels = list(torch.unbind(data.payload.soft_labels, dim=0))
             global_indices = data.payload.indices.tolist()
+            if kd_optimizer is None:
+                kd_optimizer = torch.optim.SGD(model.parameters(), lr=data.kd_lr)
             DSFLServerHandler.distill(
                 model=model,
                 dataset=data.dataset,
@@ -326,7 +332,7 @@ class DSFLParallelClientTrainer(
         )
 
         package = DSFLUplinkPackage(
-            soft_labels=torch.stack(soft_labels),
+            soft_labels=soft_labels,
             indices=data.payload.next_indices,
             metadata={"loss": loss, "acc": acc},
         )
@@ -335,6 +341,8 @@ class DSFLParallelClientTrainer(
         state = DSFLClientState(
             random=RandomState.get_random_state(device=data.device),
             model=model.state_dict(),
+            optimizer=optimizer.state_dict(),
+            kd_optimizer=kd_optimizer.state_dict() if kd_optimizer else None,
         )
         torch.save(state, data.state_path)
         return path

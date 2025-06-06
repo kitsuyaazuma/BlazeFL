@@ -319,11 +319,6 @@ class DSFLParallelClientTrainer(
         else:
             seed_everything(data.seed, device=device)
 
-        model = data.model_selector.select_model(data.model_name)
-
-        if state is not None:
-            model.load_state_dict(state.model)
-
         # Distill
         openset = data.dataset.get_dataset(type_="open", cid=None)
         if data.payload.indices is not None and data.payload.soft_labels is not None:
