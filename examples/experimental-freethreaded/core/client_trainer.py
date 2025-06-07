@@ -11,7 +11,7 @@ DownlinkPackage = TypeVar("DownlinkPackage")
 ClientConfig = TypeVar("ClientConfig")
 
 
-class MultithreadClientTrainer(
+class MultiThreadClientTrainer(
     SerialClientTrainer, Generic[UplinkPackage, DownlinkPackage, ClientConfig]
 ):
     def __init__(self, num_parallels: int, device: str) -> None:
@@ -47,6 +47,8 @@ class MultithreadClientTrainer(
                 )
                 futures.append(future)
 
-            for future in tqdm(as_completed(futures), desc="Client", leave=False):
+            for future in tqdm(
+                as_completed(futures), total=len(futures), desc="Client", leave=False
+            ):
                 result = future.result()
                 self.cache.append(result)

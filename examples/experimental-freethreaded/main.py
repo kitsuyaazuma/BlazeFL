@@ -1,4 +1,6 @@
 import logging
+from copy import deepcopy
+from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 
@@ -10,18 +12,103 @@ from blazefl.contrib import (
     FedAvgSerialClientTrainer,
     FedAvgServerHandler,
 )
+from blazefl.contrib.fedavg import FedAvgDownlinkPackage, FedAvgUplinkPackage
+from blazefl.core import ModelSelector, PartitionedDataset
 from blazefl.utils import seed_everything
 from omegaconf import DictConfig, OmegaConf
 
+from core.client_trainer import MultiThreadClientTrainer
 from dataset import PartitionedCIFAR10
 from models import FedAvgModelSelector
+
+
+@dataclass
+class FedAvgClientConfig:
+    model_selector: ModelSelector
+    model_name: str
+    dataset: PartitionedDataset
+    epochs: int
+    batch_size: int
+    lr: float
+    seed: int
+
+
+class FedAvgMultiThreadClientTrainer(
+    MultiThreadClientTrainer[
+        FedAvgUplinkPackage, FedAvgDownlinkPackage, FedAvgClientConfig
+    ]
+):
+    def __init__(
+        self,
+        model_selector: ModelSelector,
+        model_name: str,
+        dataset: PartitionedDataset,
+        device: str,
+        num_clients: int,
+        epochs: int,
+        batch_size: int,
+        lr: float,
+        seed: int,
+        num_parallels: int,
+    ) -> None:
+        super().__init__(num_parallels, device)
+        self.model_selector = model_selector
+        self.model_name = model_name
+        self.dataset = dataset
+        self.epochs = epochs
+        self.batch_size = batch_size
+        self.lr = lr
+        self.device = device
+        self.num_clients = num_clients
+        self.seed = seed
+
+    def get_client_config(self, cid: int) -> FedAvgClientConfig:
+        return FedAvgClientConfig(
+            model_selector=self.model_selector,
+            model_name=self.model_name,
+            dataset=self.dataset,
+            epochs=self.epochs,
+            batch_size=self.batch_size,
+            lr=self.lr,
+            seed=self.seed + cid,
+        )
+
+    def process_client(
+        self,
+        cid: int,
+        device: str,
+        payload: FedAvgDownlinkPackage,
+        config: FedAvgClientConfig,
+    ) -> FedAvgUplinkPackage:
+        model = config.model_selector.select_model(config.model_name)
+        train_loader = config.dataset.get_dataloader(
+            type_="train",
+            cid=cid,
+            batch_size=config.batch_size,
+        )
+        package = FedAvgParallelClientTrainer.train(
+            model=model,
+            model_parameters=payload.model_parameters,
+            train_loader=train_loader,
+            device=device,
+            epochs=config.epochs,
+            lr=config.lr,
+        )
+        return package
+
+    def uplink_package(self) -> list[FedAvgUplinkPackage]:
+        package = deepcopy(self.cache)
+        self.cache = []
+        return package
 
 
 class FedAvgPipeline:
     def __init__(
         self,
         handler: FedAvgServerHandler,
-        trainer: FedAvgSerialClientTrainer | FedAvgParallelClientTrainer,
+        trainer: FedAvgSerialClientTrainer
+        | FedAvgParallelClientTrainer
+        | FedAvgMultiThreadClientTrainer,
     ) -> None:
         self.handler = handler
         self.trainer = trainer
@@ -88,33 +175,54 @@ def main(cfg: DictConfig):
         sample_ratio=cfg.sample_ratio,
         batch_size=cfg.batch_size,
     )
-    trainer: FedAvgSerialClientTrainer | FedAvgParallelClientTrainer | None = None
-    if cfg.serial:
-        trainer = FedAvgSerialClientTrainer(
-            model_selector=model_selector,
-            model_name=cfg.model_name,
-            dataset=dataset,
-            device=device,
-            num_clients=cfg.num_clients,
-            epochs=cfg.epochs,
-            lr=cfg.lr,
-            batch_size=cfg.batch_size,
-        )
-    else:
-        trainer = FedAvgParallelClientTrainer(
-            model_selector=model_selector,
-            model_name=cfg.model_name,
-            dataset=dataset,
-            share_dir=share_dir,
-            state_dir=state_dir,
-            seed=cfg.seed,
-            device=device,
-            num_clients=cfg.num_clients,
-            epochs=cfg.epochs,
-            lr=cfg.lr,
-            batch_size=cfg.batch_size,
-            num_parallels=cfg.num_parallels,
-        )
+    trainer: (
+        FedAvgSerialClientTrainer
+        | FedAvgParallelClientTrainer
+        | FedAvgMultiThreadClientTrainer
+        | None
+    ) = None
+    match cfg.execution_mode:
+        case "serial":
+            trainer = FedAvgSerialClientTrainer(
+                model_selector=model_selector,
+                model_name=cfg.model_name,
+                dataset=dataset,
+                device=device,
+                num_clients=cfg.num_clients,
+                epochs=cfg.epochs,
+                lr=cfg.lr,
+                batch_size=cfg.batch_size,
+            )
+        case "multi-process":
+            trainer = FedAvgParallelClientTrainer(
+                model_selector=model_selector,
+                model_name=cfg.model_name,
+                dataset=dataset,
+                share_dir=share_dir,
+                state_dir=state_dir,
+                seed=cfg.seed,
+                device=device,
+                num_clients=cfg.num_clients,
+                epochs=cfg.epochs,
+                lr=cfg.lr,
+                batch_size=cfg.batch_size,
+                num_parallels=cfg.num_parallels,
+            )
+        case "multi-thread":
+            trainer = FedAvgMultiThreadClientTrainer(
+                model_selector=model_selector,
+                model_name=cfg.model_name,
+                dataset=dataset,
+                device=device,
+                num_clients=cfg.num_clients,
+                epochs=cfg.epochs,
+                lr=cfg.lr,
+                batch_size=cfg.batch_size,
+                num_parallels=cfg.num_parallels,
+                seed=cfg.seed,
+            )
+        case _:
+            raise ValueError(f"Invalid algorithm: {cfg.algorithm.name}")
     pipeline = FedAvgPipeline(handler=handler, trainer=trainer)
     try:
         pipeline.main()
