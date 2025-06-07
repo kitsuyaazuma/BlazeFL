@@ -33,4 +33,5 @@ fixable = ["ALL"]
 [dependency-groups]
 dev = [
     "mypy>=1.16.0",
+    "types-tqdm>=4.67.0.20250516",
 ]
