@@ -8,11 +8,10 @@ from tqdm import tqdm
 
 UplinkPackage = TypeVar("UplinkPackage")
 DownlinkPackage = TypeVar("DownlinkPackage")
-ClientConfig = TypeVar("ClientConfig")
 
 
 class MultiThreadClientTrainer(
-    SerialClientTrainer, Generic[UplinkPackage, DownlinkPackage, ClientConfig]
+    SerialClientTrainer, Generic[UplinkPackage, DownlinkPackage]
 ):
     def __init__(self, num_parallels: int, device: str) -> None:
         self.num_parallels = num_parallels
@@ -23,12 +22,11 @@ class MultiThreadClientTrainer(
 
     @abstractmethod
     def process_client(
-        self, cid: int, device: str, payload: DownlinkPackage, config: ClientConfig
+        self,
+        cid: int,
+        device: str,
+        payload: DownlinkPackage,
     ) -> UplinkPackage:
-        pass
-
-    @abstractmethod
-    def get_client_config(self, cid: int) -> ClientConfig:
         pass
 
     def get_client_device(self, cid: int) -> str:
@@ -40,10 +38,12 @@ class MultiThreadClientTrainer(
         with ThreadPoolExecutor(max_workers=self.num_parallels) as executor:
             futures = []
             for cid in cid_list:
-                config = self.get_client_config(cid)
                 device = self.get_client_device(cid)
                 future = executor.submit(
-                    self.process_client, cid, device, payload, config
+                    self.process_client,
+                    cid,
+                    device,
+                    payload,
                 )
                 futures.append(future)
 

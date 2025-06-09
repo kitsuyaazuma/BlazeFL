@@ -1,6 +1,5 @@
 import logging
 from copy import deepcopy
-from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 
@@ -22,20 +21,10 @@ from dataset import PartitionedCIFAR10
 from models import FedAvgModelSelector
 
 
-@dataclass
-class FedAvgClientConfig:
-    model_selector: ModelSelector
-    model_name: str
-    dataset: PartitionedDataset
-    epochs: int
-    batch_size: int
-    lr: float
-    seed: int
-
-
 class FedAvgMultiThreadClientTrainer(
     MultiThreadClientTrainer[
-        FedAvgUplinkPackage, FedAvgDownlinkPackage, FedAvgClientConfig
+        FedAvgUplinkPackage,
+        FedAvgDownlinkPackage,
     ]
 ):
     def __init__(
@@ -62,37 +51,25 @@ class FedAvgMultiThreadClientTrainer(
         self.num_clients = num_clients
         self.seed = seed
 
-    def get_client_config(self, cid: int) -> FedAvgClientConfig:
-        return FedAvgClientConfig(
-            model_selector=self.model_selector,
-            model_name=self.model_name,
-            dataset=self.dataset,
-            epochs=self.epochs,
-            batch_size=self.batch_size,
-            lr=self.lr,
-            seed=self.seed + cid,
-        )
-
     def process_client(
         self,
         cid: int,
         device: str,
         payload: FedAvgDownlinkPackage,
-        config: FedAvgClientConfig,
     ) -> FedAvgUplinkPackage:
-        model = config.model_selector.select_model(config.model_name)
-        train_loader = config.dataset.get_dataloader(
+        model = self.model_selector.select_model(self.model_name)
+        train_loader = self.dataset.get_dataloader(
             type_="train",
             cid=cid,
-            batch_size=config.batch_size,
+            batch_size=self.batch_size,
         )
         package = FedAvgParallelClientTrainer.train(
             model=model,
             model_parameters=payload.model_parameters,
             train_loader=train_loader,
             device=device,
-            epochs=config.epochs,
-            lr=config.lr,
+            epochs=self.epochs,
+            lr=self.lr,
         )
         return package
 
