@@ -2,7 +2,7 @@ import multiprocessing as mp
 import signal
 from multiprocessing.pool import ApplyResult
 from pathlib import Path
-from typing import Generic, Protocol, TypeVar
+from typing import Protocol, TypeVar
 
 import torch
 from tqdm import tqdm
@@ -11,7 +11,7 @@ UplinkPackage = TypeVar("UplinkPackage")
 DownlinkPackage = TypeVar("DownlinkPackage", contravariant=True)
 
 
-class SerialClientTrainer(Protocol, Generic[UplinkPackage, DownlinkPackage]):
+class SerialClientTrainer(Protocol[UplinkPackage, DownlinkPackage]):
     """
     Abstract base class for serial client training in federated learning.
 
@@ -50,8 +50,7 @@ DiskSharedData = TypeVar("DiskSharedData", covariant=True)
 
 
 class ParallelClientTrainer(
-    Protocol,
-    Generic[UplinkPackage, DownlinkPackage, DiskSharedData],
+    Protocol[UplinkPackage, DownlinkPackage, DiskSharedData],
 ):
     """
     Abstract base class for parallel client training in federated learning.

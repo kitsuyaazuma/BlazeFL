@@ -1,10 +1,10 @@
-from typing import Generic, Protocol, TypeVar
+from typing import Protocol, TypeVar
 
 UplinkPackage = TypeVar("UplinkPackage")
 DownlinkPackage = TypeVar("DownlinkPackage", covariant=True)
 
 
-class ServerHandler(Protocol, Generic[UplinkPackage, DownlinkPackage]):
+class ServerHandler(Protocol[UplinkPackage, DownlinkPackage]):
     """
     Abstract base class for server-side operations in federated learning.
 
