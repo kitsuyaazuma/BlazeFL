@@ -52,7 +52,6 @@ class FedAvgMultiThreadClientTrainer(
         self.epochs = epochs
         self.batch_size = batch_size
         self.lr = lr
-        self.device = device
         self.num_clients = num_clients
         self.seed = seed
 
