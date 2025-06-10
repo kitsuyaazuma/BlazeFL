@@ -3,7 +3,7 @@ repos:
   hooks:
     - id: stubgen
       name: stubgen
-      entry: stubgen -m blazefl.core -m blazefl.utils --no-analysis -o src
+      entry: stubgen -p blazefl.core -p blazefl.utils --no-analysis -o src
       language: system
       types: [python]
       pass_filenames: false

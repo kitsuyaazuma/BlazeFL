@@ -1,0 +1,6 @@
+from torch.utils.data import DataLoader, Dataset
+from typing import Protocol
+
+class PartitionedDataset(Protocol):
+    def get_dataset(self, type_: str, cid: int | None) -> Dataset: ...
+    def get_dataloader(self, type_: str, cid: int | None, batch_size: int | None) -> DataLoader: ...
