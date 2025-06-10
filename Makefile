@@ -9,4 +9,4 @@ test:
 	pytest -v tests
 
 stubgen:
-	stubgen -m blazefl.core -m blazefl.utils --no-analysis -o src
+	stubgen -p blazefl.core -p blazefl.utils --no-analysis -o src
