@@ -1,33 +1,24 @@
-from abc import abstractmethod
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from typing import Generic, TypeVar
+from typing import Protocol, TypeVar
 
-import torch
-from blazefl.core import SerialClientTrainer
 from tqdm import tqdm
 
 UplinkPackage = TypeVar("UplinkPackage")
-DownlinkPackage = TypeVar("DownlinkPackage")
+DownlinkPackage = TypeVar("DownlinkPackage", contravariant=True)
 
 
-class MultiThreadClientTrainer(
-    SerialClientTrainer, Generic[UplinkPackage, DownlinkPackage]
-):
-    def __init__(self, num_parallels: int, device: str) -> None:
-        self.num_parallels = num_parallels
-        self.device = device
-        if self.device == "cuda":
-            self.device_count = torch.cuda.device_count()
-        self.cache: list[UplinkPackage] = []
+class MultiThreadClientTrainer(Protocol[UplinkPackage, DownlinkPackage]):
+    num_parallels: int
+    device: str
+    device_count: int
+    cache: list[UplinkPackage]
 
-    @abstractmethod
     def process_client(
         self,
         cid: int,
         device: str,
         payload: DownlinkPackage,
-    ) -> UplinkPackage:
-        pass
+    ) -> UplinkPackage: ...
 
     def get_client_device(self, cid: int) -> str:
         if self.device == "cuda":

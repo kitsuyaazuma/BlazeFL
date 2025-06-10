@@ -40,7 +40,12 @@ class FedAvgMultiThreadClientTrainer(
         seed: int,
         num_parallels: int,
     ) -> None:
-        super().__init__(num_parallels, device)
+        self.num_parallels = num_parallels
+        self.device = device
+        if self.device == "cuda":
+            self.device_count = torch.cuda.device_count()
+        self.cache: list[FedAvgUplinkPackage] = []
+
         self.model_selector = model_selector
         self.model_name = model_name
         self.dataset = dataset
