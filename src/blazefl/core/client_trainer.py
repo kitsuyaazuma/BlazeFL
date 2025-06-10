@@ -1,18 +1,17 @@
 import multiprocessing as mp
 import signal
-from abc import ABC, abstractmethod
 from multiprocessing.pool import ApplyResult
 from pathlib import Path
-from typing import Generic, TypeVar
+from typing import Protocol, TypeVar
 
 import torch
 from tqdm import tqdm
 
 UplinkPackage = TypeVar("UplinkPackage")
-DownlinkPackage = TypeVar("DownlinkPackage")
+DownlinkPackage = TypeVar("DownlinkPackage", contravariant=True)
 
 
-class SerialClientTrainer(ABC, Generic[UplinkPackage, DownlinkPackage]):
+class SerialClientTrainer(Protocol[UplinkPackage, DownlinkPackage]):
     """
     Abstract base class for serial client training in federated learning.
 
@@ -23,7 +22,6 @@ class SerialClientTrainer(ABC, Generic[UplinkPackage, DownlinkPackage]):
         NotImplementedError: If the methods are not implemented in a subclass.
     """
 
-    @abstractmethod
     def uplink_package(self) -> list[UplinkPackage]:
         """
         Prepare the data package to be sent from the client to the server.
@@ -34,7 +32,6 @@ class SerialClientTrainer(ABC, Generic[UplinkPackage, DownlinkPackage]):
         """
         ...
 
-    @abstractmethod
     def local_process(self, payload: DownlinkPackage, cid_list: list[int]) -> None:
         """
         Process the downlink payload from the server for a list of client IDs.
@@ -49,12 +46,11 @@ class SerialClientTrainer(ABC, Generic[UplinkPackage, DownlinkPackage]):
         ...
 
 
-DiskSharedData = TypeVar("DiskSharedData")
+DiskSharedData = TypeVar("DiskSharedData", covariant=True)
 
 
 class ParallelClientTrainer(
-    SerialClientTrainer[UplinkPackage, DownlinkPackage],
-    Generic[UplinkPackage, DownlinkPackage, DiskSharedData],
+    Protocol[UplinkPackage, DownlinkPackage, DiskSharedData],
 ):
     """
     Abstract base class for parallel client training in federated learning.
@@ -71,24 +67,22 @@ class ParallelClientTrainer(
         NotImplementedError: If the abstract methods are not implemented in a subclass.
     """
 
-    def __init__(self, num_parallels: int, share_dir: Path, device: str) -> None:
-        """
-        Initialize the ParallelClientTrainer with parallelism settings.
+    num_parallels: int
+    share_dir: Path
+    device: str
+    device_count: int
+    cache: list[UplinkPackage]
 
-        Args:
-            num_parallels (int): Number of parallel processes to use.
-            share_dir (Path): Directory path for sharing data between processes.
-            device (str): Device to use for processing clients.
+    def uplink_package(self) -> list[UplinkPackage]:
         """
-        self.num_parallels = num_parallels
-        self.share_dir = share_dir
-        self.share_dir.mkdir(parents=True, exist_ok=True)
-        self.device = device
-        if self.device == "cuda":
-            self.device_count = torch.cuda.device_count()
-        self.cache: list[UplinkPackage] = []
+        Prepare the data package to be sent from the client to the server.
 
-    @abstractmethod
+        Returns:
+            list[UplinkPackage]: A list of data packages prepared for uplink
+            transmission.
+        """
+        ...
+
     def get_shared_data(self, cid: int, payload: DownlinkPackage) -> DiskSharedData:
         """
         Retrieve shared data for a given client ID and payload.
@@ -117,7 +111,6 @@ class ParallelClientTrainer(
         return self.device
 
     @staticmethod
-    @abstractmethod
     def process_client(path: Path, device: str) -> Path:
         """
         Process a single client based on the provided path.

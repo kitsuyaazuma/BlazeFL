@@ -4,12 +4,14 @@ on:
   pull_request:
     branches:
       - main
+      - develop
     paths-ignore:
       - "docs/**"
       - "examples/**"
   push:
     branches:
       - main
+      - develop
 
 jobs:
   run:
@@ -34,7 +36,7 @@ jobs:
         run: uv run ruff check --output-format=github .
 
       - name: Run mypy
-        run: uv run mypy .
+        run: uv run mypy src
 
       - name: Run pytest
         run: uv run pytest tests

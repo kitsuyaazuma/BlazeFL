@@ -27,6 +27,15 @@ class DiskSharedData:
 class DummyParallelClientTrainer(
     ParallelClientTrainer[UplinkPackage, DownlinkPackage, DiskSharedData]
 ):
+    def __init__(self, num_parallels: int, share_dir: Path, device: str):
+        self.num_parallels = num_parallels
+        self.share_dir = share_dir
+        self.share_dir.mkdir(parents=True, exist_ok=True)
+        self.device = device
+        if self.device == "cuda":
+            self.device_count = torch.cuda.device_count()
+        self.cache: list[UplinkPackage] = []
+
     def uplink_package(self) -> list[UplinkPackage]:
         return self.cache
 
