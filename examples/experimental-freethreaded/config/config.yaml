@@ -10,8 +10,8 @@ epochs: 5
 lr: 0.1
 batch_size: 50
 num_parallels: 10
-dataset_root_dir: /tmp/quickstart-fedavg/dataset
-dataset_split_dir: /tmp/quickstart-fedavg/split
-share_dir: /tmp/quickstart-fedavg/share
-state_dir: /tmp/quickstart-fedavg/state
+dataset_root_dir: /tmp/experimetal-freethreaded/dataset
+dataset_split_dir: /tmp/experimetal-freethreaded/split
+share_dir: /tmp/experimetal-freethreaded/share
+state_dir: /tmp/experimetal-freethreaded/state
 execution_mode: multi-thread
