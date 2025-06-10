@@ -278,7 +278,14 @@ class DSFLParallelClientTrainer(
         seed: int,
         num_parallels: int,
     ) -> None:
-        super().__init__(num_parallels, share_dir, device)
+        self.num_parallels = num_parallels
+        self.share_dir = share_dir
+        self.share_dir.mkdir(parents=True, exist_ok=True)
+        self.device = device
+        if self.device == "cuda":
+            self.device_count = torch.cuda.device_count()
+        self.cache: list[DSFLUplinkPackage] = []
+
         self.model_selector = model_selector
         self.model_name = model_name
         self.state_dir = state_dir
@@ -457,5 +464,5 @@ class DSFLParallelClientTrainer(
 
     def uplink_package(self) -> list[DSFLUplinkPackage]:
         package = deepcopy(self.cache)
-        self.cache: list[DSFLUplinkPackage] = []
+        self.cache = []
         return package
