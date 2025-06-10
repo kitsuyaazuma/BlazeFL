@@ -204,7 +204,7 @@ def main(cfg: DictConfig):
                 seed=cfg.seed,
             )
         case _:
-            raise ValueError(f"Invalid algorithm: {cfg.algorithm.name}")
+            raise ValueError(f"Invalid execution mode: {cfg.execution_mode}")
     pipeline = FedAvgPipeline(handler=handler, trainer=trainer)
     try:
         pipeline.main()
