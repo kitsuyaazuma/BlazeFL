@@ -521,7 +521,14 @@ class FedAvgParallelClientTrainer(
             seed (int): Seed for reproducibility.
             num_parallels (int): Number of parallel processes for training.
         """
-        super().__init__(num_parallels, share_dir, device)
+        self.num_parallels = num_parallels
+        self.share_dir = share_dir
+        self.share_dir.mkdir(parents=True, exist_ok=True)
+        self.device = device
+        if self.device == "cuda":
+            self.device_count = torch.cuda.device_count()
+        self.cache = []
+
         self.model_selector = model_selector
         self.model_name = model_name
         self.state_dir = state_dir
