@@ -7,8 +7,8 @@ from pathlib import Path
 import torch
 import torch.nn.functional as F
 from blazefl.core import (
-    ParallelClientTrainer,
-    ServerHandler,
+    BaseServerHandler,
+    ProcessPoolClientTrainer,
 )
 from blazefl.utils import (
     FilteredDataset,
@@ -35,7 +35,7 @@ class DSFLDownlinkPackage:
     next_indices: torch.Tensor
 
 
-class DSFLServerHandler(ServerHandler[DSFLUplinkPackage, DSFLDownlinkPackage]):
+class DSFLBaseServerHandler(BaseServerHandler[DSFLUplinkPackage, DSFLDownlinkPackage]):
     def __init__(
         self,
         model_selector: DSFLModelSelector,
@@ -116,7 +116,7 @@ class DSFLServerHandler(ServerHandler[DSFLUplinkPackage, DSFLDownlinkPackage]):
             era_soft_labels = F.softmax(mean_soft_labels / self.era_temperature, dim=0)
             global_soft_labels.append(era_soft_labels)
 
-        DSFLServerHandler.distill(
+        DSFLBaseServerHandler.distill(
             self.model,
             self.kd_optimizer,
             self.dataset,
@@ -205,7 +205,7 @@ class DSFLServerHandler(ServerHandler[DSFLUplinkPackage, DSFLDownlinkPackage]):
         return avg_loss, avg_acc
 
     def get_summary(self) -> dict[str, float]:
-        server_loss, server_acc = DSFLServerHandler.evaulate(
+        server_loss, server_acc = DSFLBaseServerHandler.evaulate(
             self.model,
             self.dataset.get_dataloader(
                 type_="test",
@@ -257,8 +257,8 @@ class DSFLClientState:
     kd_optimizer: dict[str, torch.Tensor] | None
 
 
-class DSFLParallelClientTrainer(
-    ParallelClientTrainer[DSFLUplinkPackage, DSFLDownlinkPackage, DSFLDiskSharedData]
+class DSFLProcessPoolClientTrainer(
+    ProcessPoolClientTrainer[DSFLUplinkPackage, DSFLDownlinkPackage, DSFLDiskSharedData]
 ):
     def __init__(
         self,
@@ -333,7 +333,7 @@ class DSFLParallelClientTrainer(
             global_indices = data.payload.indices.tolist()
             if kd_optimizer is None:
                 kd_optimizer = torch.optim.SGD(model.parameters(), lr=data.kd_lr)
-            DSFLServerHandler.distill(
+            DSFLBaseServerHandler.distill(
                 model=model,
                 optimizer=kd_optimizer,
                 dataset=data.dataset,
@@ -350,7 +350,7 @@ class DSFLParallelClientTrainer(
             cid=data.cid,
             batch_size=data.batch_size,
         )
-        DSFLParallelClientTrainer.train(
+        DSFLProcessPoolClientTrainer.train(
             model=model,
             optimizer=optimizer,
             train_loader=train_loader,
@@ -363,7 +363,7 @@ class DSFLParallelClientTrainer(
             Subset(open_dataset, data.payload.next_indices.tolist()),
             batch_size=data.batch_size,
         )
-        soft_labels = DSFLParallelClientTrainer.predict(
+        soft_labels = DSFLProcessPoolClientTrainer.predict(
             model=model,
             open_loader=open_loader,
             device=device,
@@ -375,7 +375,7 @@ class DSFLParallelClientTrainer(
             cid=data.cid,
             batch_size=data.batch_size,
         )
-        loss, acc = DSFLServerHandler.evaulate(
+        loss, acc = DSFLBaseServerHandler.evaulate(
             model=model,
             test_loader=test_loader,
             device=device,

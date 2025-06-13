@@ -8,11 +8,11 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 
 from blazefl.core import (
+    BaseClientTrainer,
+    BaseServerHandler,
     ModelSelector,
-    ParallelClientTrainer,
     PartitionedDataset,
-    SerialClientTrainer,
-    ServerHandler,
+    ProcessPoolClientTrainer,
 )
 from blazefl.utils import (
     RandomState,
@@ -53,7 +53,9 @@ class FedAvgDownlinkPackage:
     model_parameters: torch.Tensor
 
 
-class FedAvgServerHandler(ServerHandler[FedAvgUplinkPackage, FedAvgDownlinkPackage]):
+class FedAvgBaseServerHandler(
+    BaseServerHandler[FedAvgUplinkPackage, FedAvgDownlinkPackage]
+):
     """
     Server-side handler for the Federated Averaging (FedAvg) algorithm.
 
@@ -85,7 +87,7 @@ class FedAvgServerHandler(ServerHandler[FedAvgUplinkPackage, FedAvgDownlinkPacka
         batch_size: int,
     ) -> None:
         """
-        Initialize the FedAvgServerHandler.
+        Initialize the FedAvgBaseServerHandler.
 
         Args:
             model_selector (ModelSelector): Selector for initializing the model.
@@ -232,7 +234,7 @@ class FedAvgServerHandler(ServerHandler[FedAvgUplinkPackage, FedAvgDownlinkPacka
         return avg_loss, avg_acc
 
     def get_summary(self) -> dict[str, float]:
-        server_loss, server_acc = FedAvgServerHandler.evaluate(
+        server_loss, server_acc = FedAvgBaseServerHandler.evaluate(
             self.model,
             self.dataset.get_dataloader(
                 type_="test",
@@ -258,11 +260,11 @@ class FedAvgServerHandler(ServerHandler[FedAvgUplinkPackage, FedAvgDownlinkPacka
         return FedAvgDownlinkPackage(model_parameters)
 
 
-class FedAvgSerialClientTrainer(
-    SerialClientTrainer[FedAvgUplinkPackage, FedAvgDownlinkPackage]
+class FedAvgBaseClientTrainer(
+    BaseClientTrainer[FedAvgUplinkPackage, FedAvgDownlinkPackage]
 ):
     """
-    Serial client trainer for the Federated Averaging (FedAvg) algorithm.
+    Base client trainer for the Federated Averaging (FedAvg) algorithm.
 
     This trainer processes clients sequentially, training and evaluating a local model
     for each client based on the server-provided model parameters.
@@ -291,7 +293,7 @@ class FedAvgSerialClientTrainer(
         lr: float,
     ) -> None:
         """
-        Initialize the FedAvgSerialClientTrainer.
+        Initialize the FedAvgBaseClientTrainer.
 
         Args:
             model_selector (ModelSelector): Selector for initializing the local model.
@@ -462,8 +464,8 @@ class FedAvgDiskSharedData:
     state_path: Path
 
 
-class FedAvgParallelClientTrainer(
-    ParallelClientTrainer[
+class FedAvgProcessPoolClientTrainer(
+    ProcessPoolClientTrainer[
         FedAvgUplinkPackage, FedAvgDownlinkPackage, FedAvgDiskSharedData
     ]
 ):
@@ -573,7 +575,7 @@ class FedAvgParallelClientTrainer(
             cid=data.cid,
             batch_size=data.batch_size,
         )
-        package = FedAvgParallelClientTrainer.train(
+        package = FedAvgProcessPoolClientTrainer.train(
             model=model,
             model_parameters=data.payload.model_parameters,
             train_loader=train_loader,

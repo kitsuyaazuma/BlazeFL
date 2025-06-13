@@ -6,9 +6,9 @@ import hydra
 import torch
 import torch.multiprocessing as mp
 from blazefl.contrib import (
-    FedAvgParallelClientTrainer,
-    FedAvgSerialClientTrainer,
-    FedAvgServerHandler,
+    FedAvgBaseClientTrainer,
+    FedAvgBaseServerHandler,
+    FedAvgProcessPoolClientTrainer,
 )
 from blazefl.utils import seed_everything
 from hydra.core import hydra_config
@@ -22,8 +22,8 @@ from models import FedAvgModelSelector
 class FedAvgPipeline:
     def __init__(
         self,
-        handler: FedAvgServerHandler,
-        trainer: FedAvgSerialClientTrainer | FedAvgParallelClientTrainer,
+        handler: FedAvgBaseServerHandler,
+        trainer: FedAvgBaseClientTrainer | FedAvgProcessPoolClientTrainer,
         writer: SummaryWriter,
     ) -> None:
         self.handler = handler
@@ -87,7 +87,7 @@ def main(cfg: DictConfig):
     )
     model_selector = FedAvgModelSelector(num_classes=10)
 
-    handler = FedAvgServerHandler(
+    handler = FedAvgBaseServerHandler(
         model_selector=model_selector,
         model_name=cfg.model_name,
         dataset=dataset,
@@ -97,9 +97,9 @@ def main(cfg: DictConfig):
         sample_ratio=cfg.sample_ratio,
         batch_size=cfg.batch_size,
     )
-    trainer: FedAvgSerialClientTrainer | FedAvgParallelClientTrainer | None = None
+    trainer: FedAvgBaseClientTrainer | FedAvgProcessPoolClientTrainer | None = None
     if cfg.serial:
-        trainer = FedAvgSerialClientTrainer(
+        trainer = FedAvgBaseClientTrainer(
             model_selector=model_selector,
             model_name=cfg.model_name,
             dataset=dataset,
@@ -110,7 +110,7 @@ def main(cfg: DictConfig):
             batch_size=cfg.batch_size,
         )
     else:
-        trainer = FedAvgParallelClientTrainer(
+        trainer = FedAvgProcessPoolClientTrainer(
             model_selector=model_selector,
             model_name=cfg.model_name,
             dataset=dataset,

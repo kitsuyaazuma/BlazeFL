@@ -4,7 +4,7 @@ from pathlib import Path
 import pytest
 import torch
 
-from src.blazefl.core import ParallelClientTrainer
+from src.blazefl.core import ProcessPoolClientTrainer
 
 
 @dataclass
@@ -24,8 +24,8 @@ class DiskSharedData:
     payload: DownlinkPackage
 
 
-class DummyParallelClientTrainer(
-    ParallelClientTrainer[UplinkPackage, DownlinkPackage, DiskSharedData]
+class DummyProcessPoolClientTrainer(
+    ProcessPoolClientTrainer[UplinkPackage, DownlinkPackage, DiskSharedData]
 ):
     def __init__(self, num_parallels: int, share_dir: Path, device: str):
         self.num_parallels = num_parallels
@@ -58,10 +58,10 @@ class DummyParallelClientTrainer(
 
 @pytest.mark.parametrize("num_parallels", [1, 2, 4])
 @pytest.mark.parametrize("cid_list", [[], [42], [0, 1, 2]])
-def test_parallel_client_trainer(
+def test_process_pool_client_trainer(
     tmp_path: Path, num_parallels: int, cid_list: list[int]
 ) -> None:
-    trainer = DummyParallelClientTrainer(
+    trainer = DummyProcessPoolClientTrainer(
         num_parallels=num_parallels, share_dir=tmp_path, device="cpu"
     )
 

@@ -4,7 +4,7 @@ UplinkPackage = TypeVar("UplinkPackage")
 DownlinkPackage = TypeVar("DownlinkPackage", covariant=True)
 
 
-class ServerHandler(Protocol[UplinkPackage, DownlinkPackage]):
+class BaseServerHandler(Protocol[UplinkPackage, DownlinkPackage]):
     """
     Abstract base class for server-side operations in federated learning.
 

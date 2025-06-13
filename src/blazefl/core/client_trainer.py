@@ -12,7 +12,7 @@ UplinkPackage = TypeVar("UplinkPackage")
 DownlinkPackage = TypeVar("DownlinkPackage", contravariant=True)
 
 
-class SerialClientTrainer(Protocol[UplinkPackage, DownlinkPackage]):
+class BaseClientTrainer(Protocol[UplinkPackage, DownlinkPackage]):
     """
     Abstract base class for serial client training in federated learning.
 
@@ -50,7 +50,8 @@ class SerialClientTrainer(Protocol[UplinkPackage, DownlinkPackage]):
 DiskSharedData = TypeVar("DiskSharedData", covariant=True)
 
 
-class ParallelClientTrainer(
+class ProcessPoolClientTrainer(
+    BaseClientTrainer[UplinkPackage, DownlinkPackage],
     Protocol[UplinkPackage, DownlinkPackage, DiskSharedData],
 ):
     """
@@ -73,16 +74,6 @@ class ParallelClientTrainer(
     device: str
     device_count: int
     cache: list[UplinkPackage]
-
-    def uplink_package(self) -> list[UplinkPackage]:
-        """
-        Prepare the data package to be sent from the client to the server.
-
-        Returns:
-            list[UplinkPackage]: A list of data packages prepared for uplink
-            transmission.
-        """
-        ...
 
     def get_shared_data(self, cid: int, payload: DownlinkPackage) -> DiskSharedData:
         """
@@ -159,7 +150,10 @@ class ParallelClientTrainer(
                 self.cache.append(package)
 
 
-class MultiThreadClientTrainer(Protocol[UplinkPackage, DownlinkPackage]):
+class ThreadPoolClientTrainer(
+    BaseClientTrainer[UplinkPackage, DownlinkPackage],
+    Protocol[UplinkPackage, DownlinkPackage],
+):
     num_parallels: int
     device: str
     device_count: int

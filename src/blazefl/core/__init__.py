@@ -6,19 +6,19 @@ including client trainers, model selectors, partitioned datasets, and server han
 """
 
 from blazefl.core.client_trainer import (
-    MultiThreadClientTrainer,
-    ParallelClientTrainer,
-    SerialClientTrainer,
+    BaseClientTrainer,
+    ProcessPoolClientTrainer,
+    ThreadPoolClientTrainer,
 )
 from blazefl.core.model_selector import ModelSelector
 from blazefl.core.partitioned_dataset import PartitionedDataset
-from blazefl.core.server_handler import ServerHandler
+from blazefl.core.server_handler import BaseServerHandler
 
 __all__ = [
-    "SerialClientTrainer",
-    "ParallelClientTrainer",
-    "MultiThreadClientTrainer",
+    "BaseClientTrainer",
+    "ProcessPoolClientTrainer",
+    "ThreadPoolClientTrainer",
     "ModelSelector",
     "PartitionedDataset",
-    "ServerHandler",
+    "BaseServerHandler",
 ]
