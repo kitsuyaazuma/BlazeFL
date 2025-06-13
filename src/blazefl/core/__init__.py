@@ -12,7 +12,7 @@ from blazefl.core.client_trainer import (
 )
 from blazefl.core.model_selector import ModelSelector
 from blazefl.core.partitioned_dataset import PartitionedDataset
-from blazefl.core.server_handler import ServerHandler
+from blazefl.core.server_handler import BaseServerHandler
 
 __all__ = [
     "BaseClientTrainer",
@@ -20,5 +20,5 @@ __all__ = [
     "ThreadPoolClientTrainer",
     "ModelSelector",
     "PartitionedDataset",
-    "ServerHandler",
+    "BaseServerHandler",
 ]

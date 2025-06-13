@@ -9,10 +9,10 @@ from tqdm import tqdm
 
 from blazefl.core import (
     BaseClientTrainer,
+    BaseServerHandler,
     ModelSelector,
     PartitionedDataset,
     ProcessPoolClientTrainer,
-    ServerHandler,
 )
 from blazefl.utils import (
     RandomState,
@@ -53,7 +53,9 @@ class FedAvgDownlinkPackage:
     model_parameters: torch.Tensor
 
 
-class FedAvgServerHandler(ServerHandler[FedAvgUplinkPackage, FedAvgDownlinkPackage]):
+class FedAvgBaseServerHandler(
+    BaseServerHandler[FedAvgUplinkPackage, FedAvgDownlinkPackage]
+):
     """
     Server-side handler for the Federated Averaging (FedAvg) algorithm.
 
@@ -85,7 +87,7 @@ class FedAvgServerHandler(ServerHandler[FedAvgUplinkPackage, FedAvgDownlinkPacka
         batch_size: int,
     ) -> None:
         """
-        Initialize the FedAvgServerHandler.
+        Initialize the FedAvgBaseServerHandler.
 
         Args:
             model_selector (ModelSelector): Selector for initializing the model.
@@ -232,7 +234,7 @@ class FedAvgServerHandler(ServerHandler[FedAvgUplinkPackage, FedAvgDownlinkPacka
         return avg_loss, avg_acc
 
     def get_summary(self) -> dict[str, float]:
-        server_loss, server_acc = FedAvgServerHandler.evaluate(
+        server_loss, server_acc = FedAvgBaseServerHandler.evaluate(
             self.model,
             self.dataset.get_dataloader(
                 type_="test",

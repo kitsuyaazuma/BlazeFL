@@ -7,12 +7,12 @@ extending the core functionalities of BlazeFL.
 
 from blazefl.contrib.fedavg import (
     FedAvgBaseClientTrainer,
+    FedAvgBaseServerHandler,
     FedAvgProcessPoolClientTrainer,
-    FedAvgServerHandler,
 )
 
 __all__ = [
-    "FedAvgServerHandler",
+    "FedAvgBaseServerHandler",
     "FedAvgProcessPoolClientTrainer",
     "FedAvgBaseClientTrainer",
 ]

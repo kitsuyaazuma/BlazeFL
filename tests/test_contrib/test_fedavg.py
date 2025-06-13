@@ -11,8 +11,8 @@ from torch.utils.data import DataLoader, Dataset
 
 from src.blazefl.contrib.fedavg import (
     FedAvgBaseClientTrainer,
+    FedAvgBaseServerHandler,
     FedAvgProcessPoolClientTrainer,
-    FedAvgServerHandler,
 )
 from src.blazefl.core import ModelSelector, PartitionedDataset
 
@@ -95,7 +95,7 @@ def test_server_and_base_integration(model_selector, partitioned_dataset, device
     batch_size = 2
     lr = 0.01
 
-    server = FedAvgServerHandler(
+    server = FedAvgBaseServerHandler(
         model_selector=model_selector,
         model_name=model_name,
         dataset=partitioned_dataset,
@@ -146,7 +146,7 @@ def test_server_and_process_pool_integration(
     seed = 42
     num_parallels = 2
 
-    server = FedAvgServerHandler(
+    server = FedAvgBaseServerHandler(
         model_selector=model_selector,
         model_name=model_name,
         dataset=partitioned_dataset,
@@ -206,7 +206,7 @@ def test_server_and_process_pool_integration_keyboard_interrupt(
     seed = 42
     num_parallels = 10
 
-    server = FedAvgServerHandler(
+    server = FedAvgBaseServerHandler(
         model_selector=model_selector,
         model_name=model_name,
         dataset=partitioned_dataset,

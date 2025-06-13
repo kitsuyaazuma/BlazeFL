@@ -7,8 +7,8 @@ import torch
 import torch.multiprocessing as mp
 from blazefl.contrib import (
     FedAvgBaseClientTrainer,
+    FedAvgBaseServerHandler,
     FedAvgProcessPoolClientTrainer,
-    FedAvgServerHandler,
 )
 from blazefl.utils import seed_everything
 from hydra.core import hydra_config
@@ -22,7 +22,7 @@ from models import FedAvgModelSelector
 class FedAvgPipeline:
     def __init__(
         self,
-        handler: FedAvgServerHandler,
+        handler: FedAvgBaseServerHandler,
         trainer: FedAvgBaseClientTrainer | FedAvgProcessPoolClientTrainer,
         writer: SummaryWriter,
     ) -> None:
@@ -87,7 +87,7 @@ def main(cfg: DictConfig):
     )
     model_selector = FedAvgModelSelector(num_classes=10)
 
-    handler = FedAvgServerHandler(
+    handler = FedAvgBaseServerHandler(
         model_selector=model_selector,
         model_name=cfg.model_name,
         dataset=dataset,

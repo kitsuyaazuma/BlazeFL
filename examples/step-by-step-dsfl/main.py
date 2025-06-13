@@ -10,7 +10,7 @@ from hydra.core import hydra_config
 from omegaconf import DictConfig, OmegaConf
 from torch.utils.tensorboard.writer import SummaryWriter
 
-from algorithm import DSFLProcessPoolClientTrainer, DSFLServerHandler
+from algorithm import DSFLBaseServerHandler, DSFLProcessPoolClientTrainer
 from dataset import DSFLPartitionedDataset
 from models import DSFLModelSelector
 
@@ -18,7 +18,7 @@ from models import DSFLModelSelector
 class DSFLPipeline:
     def __init__(
         self,
-        handler: DSFLServerHandler,
+        handler: DSFLBaseServerHandler,
         trainer: DSFLProcessPoolClientTrainer,
         writer: SummaryWriter,
     ) -> None:
@@ -82,7 +82,7 @@ def main(
 
     match cfg.algorithm.name:
         case "dsfl":
-            handler = DSFLServerHandler(
+            handler = DSFLBaseServerHandler(
                 model_selector=model_selector,
                 model_name=cfg.model_name,
                 dataset=dataset,
