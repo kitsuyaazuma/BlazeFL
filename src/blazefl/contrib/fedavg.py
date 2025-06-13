@@ -29,7 +29,7 @@ class FedAvgUplinkPackage:
     in the Federated Averaging algorithm.
 
     Attributes:
-        model_parameters (torch.Tensor): Baseized model parameters from the client.
+        model_parameters (torch.Tensor): Serialized model parameters from the client.
         data_size (int): Number of data samples used in the client's training.
         metadata (dict | None): Optional metadata, such as evaluation metrics.
     """
@@ -46,7 +46,7 @@ class FedAvgDownlinkPackage:
     in the Federated Averaging algorithm.
 
     Attributes:
-        model_parameters (torch.Tensor): Baseized global model parameters to be
+        model_parameters (torch.Tensor): Serialized global model parameters to be
         distributed to clients.
     """
 
