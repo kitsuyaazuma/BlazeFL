@@ -50,7 +50,7 @@ class BaseClientTrainer(Protocol[UplinkPackage, DownlinkPackage]):
 DiskSharedData = TypeVar("DiskSharedData", covariant=True)
 
 
-class ParallelClientTrainer(
+class ProcessPoolClientTrainer(
     BaseClientTrainer[UplinkPackage, DownlinkPackage],
     Protocol[UplinkPackage, DownlinkPackage, DiskSharedData],
 ):
@@ -150,7 +150,7 @@ class ParallelClientTrainer(
                 self.cache.append(package)
 
 
-class MultiThreadClientTrainer(
+class ThreadPoolClientTrainer(
     BaseClientTrainer[UplinkPackage, DownlinkPackage],
     Protocol[UplinkPackage, DownlinkPackage],
 ):

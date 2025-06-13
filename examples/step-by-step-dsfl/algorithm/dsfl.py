@@ -7,7 +7,7 @@ from pathlib import Path
 import torch
 import torch.nn.functional as F
 from blazefl.core import (
-    ParallelClientTrainer,
+    ProcessPoolClientTrainer,
     ServerHandler,
 )
 from blazefl.utils import (
@@ -257,8 +257,8 @@ class DSFLClientState:
     kd_optimizer: dict[str, torch.Tensor] | None
 
 
-class DSFLParallelClientTrainer(
-    ParallelClientTrainer[DSFLUplinkPackage, DSFLDownlinkPackage, DSFLDiskSharedData]
+class DSFLProcessPoolClientTrainer(
+    ProcessPoolClientTrainer[DSFLUplinkPackage, DSFLDownlinkPackage, DSFLDiskSharedData]
 ):
     def __init__(
         self,
@@ -350,7 +350,7 @@ class DSFLParallelClientTrainer(
             cid=data.cid,
             batch_size=data.batch_size,
         )
-        DSFLParallelClientTrainer.train(
+        DSFLProcessPoolClientTrainer.train(
             model=model,
             optimizer=optimizer,
             train_loader=train_loader,
@@ -363,7 +363,7 @@ class DSFLParallelClientTrainer(
             Subset(open_dataset, data.payload.next_indices.tolist()),
             batch_size=data.batch_size,
         )
-        soft_labels = DSFLParallelClientTrainer.predict(
+        soft_labels = DSFLProcessPoolClientTrainer.predict(
             model=model,
             open_loader=open_loader,
             device=device,

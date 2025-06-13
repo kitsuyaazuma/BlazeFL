@@ -10,7 +10,7 @@ class BaseClientTrainer(Protocol[UplinkPackage, DownlinkPackage]):
     def local_process(self, payload: DownlinkPackage, cid_list: list[int]) -> None: ...
 DiskSharedData = TypeVar('DiskSharedData', covariant=True)
 
-class ParallelClientTrainer(BaseClientTrainer[UplinkPackage, DownlinkPackage], Protocol[UplinkPackage, DownlinkPackage, DiskSharedData]):
+class ProcessPoolClientTrainer(BaseClientTrainer[UplinkPackage, DownlinkPackage], Protocol[UplinkPackage, DownlinkPackage, DiskSharedData]):
     num_parallels: int
     share_dir: Path
     device: str
@@ -22,7 +22,7 @@ class ParallelClientTrainer(BaseClientTrainer[UplinkPackage, DownlinkPackage], P
     def process_client(path: Path, device: str) -> Path: ...
     def local_process(self, payload: DownlinkPackage, cid_list: list[int]) -> None: ...
 
-class MultiThreadClientTrainer(BaseClientTrainer[UplinkPackage, DownlinkPackage], Protocol[UplinkPackage, DownlinkPackage]):
+class ThreadPoolClientTrainer(BaseClientTrainer[UplinkPackage, DownlinkPackage], Protocol[UplinkPackage, DownlinkPackage]):
     num_parallels: int
     device: str
     device_count: int

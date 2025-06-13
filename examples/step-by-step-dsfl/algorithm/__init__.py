@@ -1,3 +1,3 @@
-from algorithm.dsfl import DSFLParallelClientTrainer, DSFLServerHandler
+from algorithm.dsfl import DSFLProcessPoolClientTrainer, DSFLServerHandler
 
-__all__ = ["DSFLServerHandler", "DSFLParallelClientTrainer"]
+__all__ = ["DSFLServerHandler", "DSFLProcessPoolClientTrainer"]
