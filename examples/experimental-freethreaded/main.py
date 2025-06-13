@@ -12,11 +12,10 @@ from blazefl.contrib import (
     FedAvgServerHandler,
 )
 from blazefl.contrib.fedavg import FedAvgDownlinkPackage, FedAvgUplinkPackage
-from blazefl.core import ModelSelector, PartitionedDataset
+from blazefl.core import ModelSelector, MultiThreadClientTrainer, PartitionedDataset
 from blazefl.utils import seed_everything
 from omegaconf import DictConfig, OmegaConf
 
-from core.client_trainer import MultiThreadClientTrainer
 from dataset import PartitionedCIFAR10
 from models import FedAvgModelSelector
 

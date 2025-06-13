@@ -10,16 +10,16 @@ sdist = { url = "https://files.pythonhosted.org/packages/3e/38/7859ff46355f76f8d
 
 [[package]]
 name = "blazefl"
-version = "2.0.0.dev1"
+version = "2.0.0.dev2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "numpy" },
     { name = "torch" },
     { name = "tqdm" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/9d/4a/b82e557a19b3dc957e43fc29c73bb3b9ddbb78575de20e2a98a7db954c51/blazefl-2.0.0.dev1.tar.gz", hash = "sha256:aeef9d1a6835ae240b9772144a1ca8ee2691a9252a980173b1c81d1c7c453596", size = 591232, upload_time = "2025-06-10T08:28:25.786Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/9b/92/3f668d7259a81d13d5d2e6089d8022629a09058ddbcae33f5873d3871656/blazefl-2.0.0.dev2.tar.gz", hash = "sha256:28a3e09d6f6cec8d8e8bb4da90adaa0c795980c74f9d4ce65024ba762726b595", size = 613563, upload_time = "2025-06-10T09:24:08.981Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/99/c0/3a4e12feee7a3a9e52a3eba30816a7ce7d4a11e3b11989b72c01419e1116/blazefl-2.0.0.dev1-py3-none-any.whl", hash = "sha256:1a158f673ac8f644b0a273d6cdb6d32b0ff17a1f479dffd930a06873f023042a", size = 23714, upload_time = "2025-06-10T08:28:24.297Z" },
+    { url = "https://files.pythonhosted.org/packages/e3/7c/841c8b9d22caaefc1dcc167076292fd1479309b3e11eb6fc1b24141792a8/blazefl-2.0.0.dev2-py3-none-any.whl", hash = "sha256:88639018166dafa79fde59aa5575bfb7277bf9e0e4497f22a59e9c7ec34efa4b", size = 23999, upload_time = "2025-06-10T09:24:07.553Z" },
 ]
 
 [[package]]
@@ -50,7 +50,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "blazefl", specifier = ">=2.0.0.dev1" },
+    { name = "blazefl", specifier = ">=2.0.0.dev2" },
     { name = "hydra-core", specifier = ">=1.3.2" },
     { name = "torch", specifier = ">=2.7.1" },
     { name = "torchvision", specifier = ">=0.22.1" },
