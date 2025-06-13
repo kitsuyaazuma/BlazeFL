@@ -8,10 +8,10 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 
 from blazefl.core import (
+    BaseClientTrainer,
     ModelSelector,
     ParallelClientTrainer,
     PartitionedDataset,
-    SerialClientTrainer,
     ServerHandler,
 )
 from blazefl.utils import (
@@ -259,7 +259,7 @@ class FedAvgServerHandler(ServerHandler[FedAvgUplinkPackage, FedAvgDownlinkPacka
 
 
 class FedAvgSerialClientTrainer(
-    SerialClientTrainer[FedAvgUplinkPackage, FedAvgDownlinkPackage]
+    BaseClientTrainer[FedAvgUplinkPackage, FedAvgDownlinkPackage]
 ):
     """
     Serial client trainer for the Federated Averaging (FedAvg) algorithm.
