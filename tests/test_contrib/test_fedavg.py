@@ -10,9 +10,9 @@ import torch
 from torch.utils.data import DataLoader, Dataset
 
 from src.blazefl.contrib.fedavg import (
-    FedAvgParallelClientTrainer,
-    FedAvgSerialClientTrainer,
-    FedAvgServerHandler,
+    FedAvgBaseClientTrainer,
+    FedAvgBaseServerHandler,
+    FedAvgProcessPoolClientTrainer,
 )
 from src.blazefl.core import ModelSelector, PartitionedDataset
 
@@ -86,7 +86,7 @@ def tmp_state_dir(tmp_path):
     return state_dir
 
 
-def test_server_and_serial_integration(model_selector, partitioned_dataset, device):
+def test_server_and_base_integration(model_selector, partitioned_dataset, device):
     model_name = "dummy"
     global_round = 1
     num_clients = 3
@@ -95,7 +95,7 @@ def test_server_and_serial_integration(model_selector, partitioned_dataset, devi
     batch_size = 2
     lr = 0.01
 
-    server = FedAvgServerHandler(
+    server = FedAvgBaseServerHandler(
         model_selector=model_selector,
         model_name=model_name,
         dataset=partitioned_dataset,
@@ -106,7 +106,7 @@ def test_server_and_serial_integration(model_selector, partitioned_dataset, devi
         batch_size=batch_size,
     )
 
-    trainer = FedAvgSerialClientTrainer(
+    trainer = FedAvgBaseClientTrainer(
         model_selector=model_selector,
         model_name=model_name,
         dataset=partitioned_dataset,
@@ -133,8 +133,9 @@ def test_server_and_serial_integration(model_selector, partitioned_dataset, devi
     assert server.if_stop() is True
 
 
-def test_server_and_parallel_integration(
-    model_selector, partitioned_dataset, device, tmp_share_dir, tmp_state_dir
+@pytest.mark.parametrize("ipc_mode", ["storage", "shared_memory"])
+def test_server_and_process_pool_integration(
+    model_selector, partitioned_dataset, device, tmp_share_dir, tmp_state_dir, ipc_mode
 ):
     model_name = "dummy"
     global_round = 2
@@ -146,7 +147,7 @@ def test_server_and_parallel_integration(
     seed = 42
     num_parallels = 2
 
-    server = FedAvgServerHandler(
+    server = FedAvgBaseServerHandler(
         model_selector=model_selector,
         model_name=model_name,
         dataset=partitioned_dataset,
@@ -157,7 +158,7 @@ def test_server_and_parallel_integration(
         batch_size=batch_size,
     )
 
-    trainer = FedAvgParallelClientTrainer(
+    trainer = FedAvgProcessPoolClientTrainer(
         model_selector=model_selector,
         model_name=model_name,
         share_dir=tmp_share_dir,
@@ -170,6 +171,7 @@ def test_server_and_parallel_integration(
         lr=lr,
         seed=seed,
         num_parallels=num_parallels,
+        ipc_mode=ipc_mode,
     )
 
     for round_ in range(1, global_round + 1):
@@ -193,7 +195,7 @@ def run_local_process(trainer, downlink, cids):
         trainer.local_process(downlink, cids)
 
 
-def test_server_and_parallel_integration_keyboard_interrupt(
+def test_server_and_process_pool_integration_keyboard_interrupt(
     model_selector, partitioned_dataset, device, tmp_share_dir, tmp_state_dir
 ):
     model_name = "dummy"
@@ -206,7 +208,7 @@ def test_server_and_parallel_integration_keyboard_interrupt(
     seed = 42
     num_parallels = 10
 
-    server = FedAvgServerHandler(
+    server = FedAvgBaseServerHandler(
         model_selector=model_selector,
         model_name=model_name,
         dataset=partitioned_dataset,
@@ -217,7 +219,7 @@ def test_server_and_parallel_integration_keyboard_interrupt(
         batch_size=batch_size,
     )
 
-    trainer = FedAvgParallelClientTrainer(
+    trainer = FedAvgProcessPoolClientTrainer(
         model_selector=model_selector,
         model_name=model_name,
         share_dir=tmp_share_dir,
@@ -230,6 +232,7 @@ def test_server_and_parallel_integration_keyboard_interrupt(
         lr=lr,
         seed=seed,
         num_parallels=num_parallels,
+        ipc_mode="storage",
     )
 
     cids = server.sample_clients()

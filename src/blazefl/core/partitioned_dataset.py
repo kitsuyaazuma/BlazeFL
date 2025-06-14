@@ -1,9 +1,9 @@
-from abc import ABC, abstractmethod
+from typing import Protocol
 
 from torch.utils.data import DataLoader, Dataset
 
 
-class PartitionedDataset(ABC):
+class PartitionedDataset(Protocol):
     """
     Abstract base class for partitioned datasets in federated learning.
 
@@ -14,7 +14,6 @@ class PartitionedDataset(ABC):
         NotImplementedError: If the methods are not implemented in a subclass.
     """
 
-    @abstractmethod
     def get_dataset(self, type_: str, cid: int | None) -> Dataset:
         """
         Retrieve a dataset for a specific type and client ID.
@@ -28,7 +27,6 @@ class PartitionedDataset(ABC):
         """
         ...
 
-    @abstractmethod
     def get_dataloader(
         self, type_: str, cid: int | None, batch_size: int | None
     ) -> DataLoader:

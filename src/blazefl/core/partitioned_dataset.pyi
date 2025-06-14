@@ -1,8 +1,6 @@
-from abc import ABC, abstractmethod
 from torch.utils.data import DataLoader, Dataset
+from typing import Protocol
 
-class PartitionedDataset(ABC):
-    @abstractmethod
+class PartitionedDataset(Protocol):
     def get_dataset(self, type_: str, cid: int | None) -> Dataset: ...
-    @abstractmethod
     def get_dataloader(self, type_: str, cid: int | None, batch_size: int | None) -> DataLoader: ...
