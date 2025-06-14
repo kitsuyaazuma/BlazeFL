@@ -98,18 +98,7 @@ def main(cfg: DictConfig):
         batch_size=cfg.batch_size,
     )
     trainer: FedAvgBaseClientTrainer | FedAvgProcessPoolClientTrainer | None = None
-    if cfg.serial:
-        trainer = FedAvgBaseClientTrainer(
-            model_selector=model_selector,
-            model_name=cfg.model_name,
-            dataset=dataset,
-            device=device,
-            num_clients=cfg.num_clients,
-            epochs=cfg.epochs,
-            lr=cfg.lr,
-            batch_size=cfg.batch_size,
-        )
-    else:
+    if cfg.parallel:
         trainer = FedAvgProcessPoolClientTrainer(
             model_selector=model_selector,
             model_name=cfg.model_name,
@@ -123,6 +112,18 @@ def main(cfg: DictConfig):
             lr=cfg.lr,
             batch_size=cfg.batch_size,
             num_parallels=cfg.num_parallels,
+            ipc_mode=cfg.ipc_mode,
+        )
+    else:
+        trainer = FedAvgBaseClientTrainer(
+            model_selector=model_selector,
+            model_name=cfg.model_name,
+            dataset=dataset,
+            device=device,
+            num_clients=cfg.num_clients,
+            epochs=cfg.epochs,
+            lr=cfg.lr,
+            batch_size=cfg.batch_size,
         )
     pipeline = FedAvgPipeline(handler=handler, trainer=trainer, writer=writer)
     try:

@@ -2,6 +2,7 @@ import random
 from copy import deepcopy
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Literal
 
 import torch
 from torch.utils.data import DataLoader
@@ -431,7 +432,7 @@ class FedAvgBaseClientTrainer(
 
 
 @dataclass
-class FedAvgDiskSharedData:
+class FedAvgClientConfig:
     """
     Data structure representing shared data for parallel client training
     in the Federated Averaging (FedAvg) algorithm.
@@ -448,7 +449,6 @@ class FedAvgDiskSharedData:
         lr (float): Learning rate for the optimizer.
         cid (int): Client ID.
         seed (int): Seed for reproducibility.
-        payload (FedAvgDownlinkPackage): Downlink package with global model parameters.
         state_path (Path): Path to save the client's random state.
     """
 
@@ -460,13 +460,12 @@ class FedAvgDiskSharedData:
     lr: float
     cid: int
     seed: int
-    payload: FedAvgDownlinkPackage
     state_path: Path
 
 
 class FedAvgProcessPoolClientTrainer(
     ProcessPoolClientTrainer[
-        FedAvgUplinkPackage, FedAvgDownlinkPackage, FedAvgDiskSharedData
+        FedAvgUplinkPackage, FedAvgDownlinkPackage, FedAvgClientConfig
     ]
 ):
     """
@@ -488,6 +487,8 @@ class FedAvgProcessPoolClientTrainer(
         lr (float): Learning rate for the optimizer.
         seed (int): Seed for reproducibility.
         num_parallels (int): Number of parallel processes for training.
+        ipc_mode (Literal["storage", "shared_memory"]):
+            Inter-process communication mode.
         device_count (int | None): Number of CUDA devices available (if using GPU).
     """
 
@@ -505,6 +506,7 @@ class FedAvgProcessPoolClientTrainer(
         lr: float,
         seed: int,
         num_parallels: int,
+        ipc_mode: Literal["storage", "shared_memory"],
     ) -> None:
         """
         Initialize the FedAvgParalleClientTrainer.
@@ -542,50 +544,93 @@ class FedAvgProcessPoolClientTrainer(
         self.device = device
         self.num_clients = num_clients
         self.seed = seed
+        self.ipc_mode = ipc_mode
 
     @staticmethod
-    def process_client(path: Path, device: str) -> Path:
+    def worker(
+        config: FedAvgClientConfig | Path,
+        payload: FedAvgDownlinkPackage | Path,
+        device: str,
+    ) -> FedAvgUplinkPackage | Path:
         """
         Process a single client's local training and evaluation.
 
-        This method is executed by a parallel process and handles data loading,
-        training, evaluation, and saving results to a shared file.
+        This method is executed by a worker process and handles loading client
+        configuration and payload, performing the client-specific training,
+        and returning the result.
 
         Args:
-            path (Path): Path to the shared data file containing client-specific
-            information.
-            device (str): Device to use for processing.
+            config (FedAvgClientConfig | Path):
+                The client's configuration data, or a path to a file containing
+                the configuration if `ipc_mode` is "storage".
+            payload (FedAvgDownlinkPackage | Path):
+                The downlink payload from the server, or a path to a file
+                containing the payload if `ipc_mode` is "storage".
+            device (str): Device to use for processing (e.g., "cpu", "cuda:0").
 
         Returns:
-            Path: Path to the file with the processed results.
+            FedAvgUplinkPackage | Path:
+                The uplink package containing the client's results, or a path to
+                a file containing the package if `ipc_mode` is "storage".
         """
-        data = torch.load(path, weights_only=False)
-        assert isinstance(data, FedAvgDiskSharedData)
 
-        if data.state_path.exists():
-            state = torch.load(data.state_path, weights_only=False)
-            assert isinstance(state, RandomState)
-            RandomState.set_random_state(state)
+        def _storage_worker(
+            config_path: Path,
+            payload_path: Path,
+            device: str,
+        ) -> Path:
+            config = torch.load(config_path, weights_only=False)
+            assert isinstance(config, FedAvgClientConfig)
+            payload = torch.load(payload_path, weights_only=False)
+            assert isinstance(payload, FedAvgDownlinkPackage)
+            package = _shared_memory_worker(
+                config=config,
+                payload=payload,
+                device=device,
+            )
+            torch.save(package, config_path)
+            return config_path
+
+        def _shared_memory_worker(
+            config: FedAvgClientConfig,
+            payload: FedAvgDownlinkPackage,
+            device: str,
+        ) -> FedAvgUplinkPackage:
+            if config.state_path.exists():
+                state = torch.load(config.state_path, weights_only=False)
+                assert isinstance(state, RandomState)
+                RandomState.set_random_state(state)
+            else:
+                seed_everything(config.seed, device=device)
+
+            model = config.model_selector.select_model(config.model_name)
+            train_loader = config.dataset.get_dataloader(
+                type_="train",
+                cid=config.cid,
+                batch_size=config.batch_size,
+            )
+            package = FedAvgProcessPoolClientTrainer.train(
+                model=model,
+                model_parameters=payload.model_parameters,
+                train_loader=train_loader,
+                device=device,
+                epochs=config.epochs,
+                lr=config.lr,
+            )
+            torch.save(RandomState.get_random_state(device=device), config.state_path)
+            return package
+
+        if isinstance(config, Path) and isinstance(payload, Path):
+            return _storage_worker(config, payload, device)
+        elif isinstance(config, FedAvgClientConfig) and isinstance(
+            payload, FedAvgDownlinkPackage
+        ):
+            return _shared_memory_worker(config, payload, device)
         else:
-            seed_everything(data.seed, device=device)
-
-        model = data.model_selector.select_model(data.model_name)
-        train_loader = data.dataset.get_dataloader(
-            type_="train",
-            cid=data.cid,
-            batch_size=data.batch_size,
-        )
-        package = FedAvgProcessPoolClientTrainer.train(
-            model=model,
-            model_parameters=data.payload.model_parameters,
-            train_loader=train_loader,
-            device=device,
-            epochs=data.epochs,
-            lr=data.lr,
-        )
-        torch.save(package, path)
-        torch.save(RandomState.get_random_state(device=device), data.state_path)
-        return path
+            raise TypeError(
+                "Invalid types for config and payload."
+                " Expected FedAvgClientConfig and FedAvgDownlinkPackage or Path."
+            )
 
     @staticmethod
     def train(
@@ -636,21 +681,17 @@ class FedAvgProcessPoolClientTrainer(
 
         return FedAvgUplinkPackage(model_parameters, data_size)
 
-    def get_shared_data(
-        self, cid: int, payload: FedAvgDownlinkPackage
-    ) -> FedAvgDiskSharedData:
+    def get_client_config(self, cid: int) -> FedAvgClientConfig:
         """
-        Generate the shared data for a specific client.
+        Generate the client configuration for a specific client.
 
         Args:
             cid (int): Client ID.
-            payload (FedAvgDownlinkPackage): Downlink package with global model
-            parameters.
 
         Returns:
-            FedAvgDiskSharedData: Shared data structure for the client.
+            FedAvgClientConfig: Client configuration data structure.
         """
-        data = FedAvgDiskSharedData(
+        data = FedAvgClientConfig(
             model_selector=self.model_selector,
             model_name=self.model_name,
             dataset=self.dataset,
@@ -659,7 +700,6 @@ class FedAvgProcessPoolClientTrainer(
             lr=self.lr,
             cid=cid,
             seed=self.seed,
-            payload=payload,
             state_path=self.state_dir.joinpath(f"{cid}.pt"),
         )
         return data

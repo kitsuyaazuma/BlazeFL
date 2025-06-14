@@ -233,7 +233,7 @@ class DSFLBaseServerHandler(BaseServerHandler[DSFLUplinkPackage, DSFLDownlinkPac
 
 
 @dataclass
-class DSFLDiskSharedData:
+class DSFLClientConfig:
     model_selector: DSFLModelSelector
     model_name: str
     dataset: DSFLPartitionedDataset
@@ -245,7 +245,6 @@ class DSFLDiskSharedData:
     kd_lr: float
     cid: int
     seed: int
-    payload: DSFLDownlinkPackage
     state_path: Path
 
 
@@ -258,7 +257,7 @@ class DSFLClientState:
 
 
 class DSFLProcessPoolClientTrainer(
-    ProcessPoolClientTrainer[DSFLUplinkPackage, DSFLDownlinkPackage, DSFLDiskSharedData]
+    ProcessPoolClientTrainer[DSFLUplinkPackage, DSFLDownlinkPackage, DSFLClientConfig]
 ):
     def __init__(
         self,
@@ -300,68 +299,76 @@ class DSFLProcessPoolClientTrainer(
         self.device = device
         self.num_clients = num_clients
         self.seed = seed
+        self.ipc_mode = "storage"
 
         if self.device == "cuda":
             self.device_count = torch.cuda.device_count()
 
     @staticmethod
-    def process_client(path: Path, device: str) -> Path:
-        data = torch.load(path, weights_only=False)
-        assert isinstance(data, DSFLDiskSharedData)
+    def worker(
+        config: DSFLClientConfig | Path,
+        payload: DSFLDownlinkPackage | Path,
+        device: str,
+    ) -> Path:
+        assert isinstance(config, Path) and isinstance(payload, Path)
+        config_path, payload_path = config, payload
+        c = torch.load(config_path, weights_only=False)
+        p = torch.load(payload_path, weights_only=False)
+        assert isinstance(c, DSFLClientConfig) and isinstance(p, DSFLDownlinkPackage)
 
-        model = data.model_selector.select_model(data.model_name)
-        optimizer = torch.optim.SGD(model.parameters(), lr=data.lr)
+        model = c.model_selector.select_model(c.model_name)
+        optimizer = torch.optim.SGD(model.parameters(), lr=c.lr)
         kd_optimizer: torch.optim.SGD | None = None
 
         state: DSFLClientState | None = None
-        if data.state_path.exists():
-            state = torch.load(data.state_path, weights_only=False)
+        if c.state_path.exists():
+            state = torch.load(c.state_path, weights_only=False)
             assert isinstance(state, DSFLClientState)
             RandomState.set_random_state(state.random)
             model.load_state_dict(state.model)
             optimizer.load_state_dict(state.optimizer)
             if state.kd_optimizer is not None:
-                kd_optimizer = torch.optim.SGD(model.parameters(), lr=data.kd_lr)
+                kd_optimizer = torch.optim.SGD(model.parameters(), lr=c.kd_lr)
                 kd_optimizer.load_state_dict(state.kd_optimizer)
         else:
-            seed_everything(data.seed, device=device)
+            seed_everything(c.seed, device=device)
 
         # Distill
-        open_dataset = data.dataset.get_dataset(type_="open", cid=None)
-        if data.payload.indices is not None and data.payload.soft_labels is not None:
-            global_soft_labels = list(torch.unbind(data.payload.soft_labels, dim=0))
-            global_indices = data.payload.indices.tolist()
+        open_dataset = c.dataset.get_dataset(type_="open", cid=None)
+        if p.indices is not None and p.soft_labels is not None:
+            global_soft_labels = list(torch.unbind(p.soft_labels, dim=0))
+            global_indices = p.indices.tolist()
             if kd_optimizer is None:
-                kd_optimizer = torch.optim.SGD(model.parameters(), lr=data.kd_lr)
+                kd_optimizer = torch.optim.SGD(model.parameters(), lr=c.kd_lr)
             DSFLBaseServerHandler.distill(
                 model=model,
                 optimizer=kd_optimizer,
-                dataset=data.dataset,
+                dataset=c.dataset,
                 global_soft_labels=global_soft_labels,
                 global_indices=global_indices,
-                kd_epochs=data.kd_epochs,
-                kd_batch_size=data.kd_batch_size,
+                kd_epochs=c.kd_epochs,
+                kd_batch_size=c.kd_batch_size,
                 device=device,
             )
 
         # Train
-        train_loader = data.dataset.get_dataloader(
+        train_loader = c.dataset.get_dataloader(
             type_="train",
-            cid=data.cid,
-            batch_size=data.batch_size,
+            cid=c.cid,
+            batch_size=c.batch_size,
         )
         DSFLProcessPoolClientTrainer.train(
             model=model,
             optimizer=optimizer,
             train_loader=train_loader,
             device=device,
-            epochs=data.epochs,
+            epochs=c.epochs,
         )
 
         # Predict
         open_loader = DataLoader(
-            Subset(open_dataset, data.payload.next_indices.tolist()),
-            batch_size=data.batch_size,
+            Subset(open_dataset, p.next_indices.tolist()),
+            batch_size=c.batch_size,
         )
         soft_labels = DSFLProcessPoolClientTrainer.predict(
             model=model,
@@ -370,10 +377,10 @@ class DSFLProcessPoolClientTrainer(
         )
 
         # Evaluate
-        test_loader = data.dataset.get_dataloader(
+        test_loader = c.dataset.get_dataloader(
             type_="test",
-            cid=data.cid,
-            batch_size=data.batch_size,
+            cid=c.cid,
+            batch_size=c.batch_size,
         )
         loss, acc = DSFLBaseServerHandler.evaulate(
             model=model,
@@ -383,19 +390,19 @@ class DSFLProcessPoolClientTrainer(
 
         package = DSFLUplinkPackage(
             soft_labels=soft_labels,
-            indices=data.payload.next_indices,
+            indices=p.next_indices,
             metadata={"loss": loss, "acc": acc},
         )
 
-        torch.save(package, path)
+        torch.save(package, config_path)
         state = DSFLClientState(
             random=RandomState.get_random_state(device=device),
             model=model.state_dict(),
             optimizer=optimizer.state_dict(),
             kd_optimizer=kd_optimizer.state_dict() if kd_optimizer else None,
         )
-        torch.save(state, data.state_path)
-        return path
+        torch.save(state, c.state_path)
+        return config_path
 
     @staticmethod
     def train(
@@ -442,10 +449,8 @@ class DSFLProcessPoolClientTrainer(
         soft_labels = torch.cat(soft_labels_list, dim=0)
         return soft_labels.cpu()
 
-    def get_shared_data(
-        self, cid: int, payload: DSFLDownlinkPackage
-    ) -> DSFLDiskSharedData:
-        data = DSFLDiskSharedData(
+    def get_client_config(self, cid: int) -> DSFLClientConfig:
+        data = DSFLClientConfig(
             model_selector=self.model_selector,
             model_name=self.model_name,
             dataset=self.dataset,
@@ -457,7 +462,6 @@ class DSFLProcessPoolClientTrainer(
             kd_lr=self.kd_lr,
             cid=cid,
             seed=self.seed,
-            payload=payload,
             state_path=self.state_dir.joinpath(f"{cid}.pt"),
         )
         return data
