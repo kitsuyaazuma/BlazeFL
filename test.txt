@@ -1,0 +1,510 @@
+pytest -v tests
+============================= test session starts ==============================
+platform darwin -- Python 3.12.7, pytest-8.3.4, pluggy-1.5.0 -- /Users/azuma/Documents/Programming/blazefl/.venv/bin/python
+cachedir: .pytest_cache
+rootdir: /Users/azuma/Documents/Programming/blazefl
+configfile: pyproject.toml
+collecting ... collected 28 items
+
+tests/test_contrib/test_fedavg.py::test_server_and_base_integration PASSED [  3%]
+tests/test_contrib/test_fedavg.py::test_server_and_process_pool_integration FAILED [  7%]
+tests/test_contrib/test_fedavg.py::test_server_and_process_pool_integration_keyboard_interrupt PASSED [ 10%]
+tests/test_core/test_client_trainer.py::test_process_pool_client_trainer_storage[cid_list0-1] PASSED [ 14%]
+tests/test_core/test_client_trainer.py::test_process_pool_client_trainer_storage[cid_list0-2] PASSED [ 17%]
+tests/test_core/test_client_trainer.py::test_process_pool_client_trainer_storage[cid_list0-4] PASSED [ 21%]
+tests/test_core/test_client_trainer.py::test_process_pool_client_trainer_storage[cid_list1-1] PASSED [ 25%]
+tests/test_core/test_client_trainer.py::test_process_pool_client_trainer_storage[cid_list1-2] PASSED [ 28%]
+tests/test_core/test_client_trainer.py::test_process_pool_client_trainer_storage[cid_list1-4] PASSED [ 32%]
+tests/test_core/test_client_trainer.py::test_process_pool_client_trainer_storage[cid_list2-1] FAILED [ 35%]
+tests/test_core/test_client_trainer.py::test_process_pool_client_trainer_storage[cid_list2-2] FAILED [ 39%]
+tests/test_core/test_client_trainer.py::test_process_pool_client_trainer_storage[cid_list2-4] FAILED [ 42%]
+tests/test_core/test_client_trainer.py::test_process_pool_client_trainer_shared_memory[cid_list0-1] PASSED [ 46%]
+tests/test_core/test_client_trainer.py::test_process_pool_client_trainer_shared_memory[cid_list0-2] PASSED [ 50%]
+tests/test_core/test_client_trainer.py::test_process_pool_client_trainer_shared_memory[cid_list0-4] PASSED [ 53%]
+tests/test_core/test_model_selector.py::test_model_selector_subclass PASSED [ 57%]
+tests/test_core/test_partitioned_dataset.py::test_partitioned_dataset_subclass PASSED [ 60%]
+tests/test_utils/test_dataset.py::test_filtered_dataset_basic PASSED     [ 64%]
+tests/test_utils/test_dataset.py::test_filtered_dataset_no_targets PASSED [ 67%]
+tests/test_utils/test_dataset.py::test_filtered_dataset_transform PASSED [ 71%]
+tests/test_utils/test_dataset.py::test_filtered_dataset_assert_length_mismatch PASSED [ 75%]
+tests/test_utils/test_dataset.py::test_filtered_dataset_empty_indices PASSED [ 78%]
+tests/test_utils/test_seed.py::test_seed_everything[cpu] PASSED          [ 82%]
+tests/test_utils/test_seed.py::test_seed_everything[cuda] SKIPPED (C...) [ 85%]
+tests/test_utils/test_seed.py::test_random_state_cpu PASSED              [ 89%]
+tests/test_utils/test_seed.py::test_random_state_cuda SKIPPED (CUDA ...) [ 92%]
+tests/test_utils/test_serialize.py::test_serialize_deserialize_cpu PASSED [ 96%]
+tests/test_utils/test_serialize.py::test_serialize_deserialize_gpu PASSED [100%]
+
+=================================== FAILURES ===================================
+___________________ test_server_and_process_pool_integration ___________________
+
+model_selector = <tests.test_contrib.test_fedavg.DummyModelSelector object at 0x10a2e0560>
+partitioned_dataset = <tests.test_contrib.test_fedavg.DummyPartitionedDataset object at 0x106356960>
+device = 'cpu'
+tmp_share_dir = PosixPath('/private/var/folders/vr/jd0mj7hn6lzbkvnrtzpw64780000gn/T/pytest-of-azuma/pytest-13/test_server_and_process_pool_i0/share')
+tmp_state_dir = PosixPath('/private/var/folders/vr/jd0mj7hn6lzbkvnrtzpw64780000gn/T/pytest-of-azuma/pytest-13/test_server_and_process_pool_i0/state')
+
+    def test_server_and_process_pool_integration(
+        model_selector, partitioned_dataset, device, tmp_share_dir, tmp_state_dir
+    ):
+        model_name = "dummy"
+        global_round = 2
+        num_clients = 3
+        sample_ratio = 1.0
+        epochs = 1
+        batch_size = 2
+        lr = 0.01
+        seed = 42
+        num_parallels = 2
+    
+        server = FedAvgBaseServerHandler(
+            model_selector=model_selector,
+            model_name=model_name,
+            dataset=partitioned_dataset,
+            global_round=global_round,
+            num_clients=num_clients,
+            sample_ratio=sample_ratio,
+            device=device,
+            batch_size=batch_size,
+        )
+    
+        trainer = FedAvgProcessPoolClientTrainer(
+            model_selector=model_selector,
+            model_name=model_name,
+            share_dir=tmp_share_dir,
+            state_dir=tmp_state_dir,
+            dataset=partitioned_dataset,
+            device=device,
+            num_clients=num_clients,
+            epochs=epochs,
+            batch_size=batch_size,
+            lr=lr,
+            seed=seed,
+            num_parallels=num_parallels,
+        )
+    
+        for round_ in range(1, global_round + 1):
+            cids = server.sample_clients()
+            downlink = server.downlink_package()
+>           trainer.local_process(downlink, cids)
+
+tests/test_contrib/test_fedavg.py:178: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <src.blazefl.contrib.fedavg.FedAvgProcessPoolClientTrainer object at 0x106cd4ec0>
+payload = FedAvgDownlinkPackage(model_parameters=tensor([ 0.0301,  0.1283,  0.1331, -0.0035, -0.0659,  0.1745,  0.3171,  0.3644,
+         0.4421, -0.0034]))
+cid_list = [0, 1, 2]
+
+    def local_process(self, payload: DownlinkPackage, cid_list: list[int]) -> None:
+        """
+        Manage the parallel processing of clients.
+    
+        This method distributes the processing of multiple clients across
+        parallel processes, handling data saving, loading, and caching.
+    
+        Args:
+            payload (DownlinkPackage): The data package received from the server.
+            cid_list (list[int]): A list of client IDs to process.
+    
+        Returns:
+            None
+        """
+        payload_path = Path()
+        if self.ipc_mode == "storage":
+            payload_path = self.share_dir.joinpath("payload.pkl")
+            torch.save(payload, payload_path)
+        else:  # shared_memory
+            move_tensor_to_shared_memory(payload)
+    
+        with mp.Pool(
+            processes=self.num_parallels,
+            initializer=signal.signal,
+            initargs=(signal.SIGINT, signal.SIG_IGN),
+        ) as pool:
+            jobs: list[ApplyResult] = []
+            for cid in cid_list:
+                config = self.get_client_config(cid)
+                device = self.get_client_device(cid)
+                if self.ipc_mode == "storage":
+                    config_path = self.share_dir.joinpath(f"{cid}.pkl")
+                    torch.save(config, config_path)
+                    jobs.append(
+                        pool.apply_async(
+                            self.worker, (config_path, payload_path, device)
+                        )
+                    )
+                else:  # shared_memory
+                    jobs.append(
+                        pool.apply_async(self.worker, (config, payload, device))
+                    )
+    
+            for job in tqdm(jobs, desc="Client", leave=False):
+                result = job.get()
+                if self.ipc_mode == "storage":
+>                   assert isinstance(result, Path)
+E                   AssertionError
+
+src/blazefl/core/client_trainer.py:169: AssertionError
+----------------------------- Captured stderr call -----------------------------
+Client:   0%|          | 0/3 [00:00<?, ?it/s]                                             
+____________ test_process_pool_client_trainer_storage[cid_list2-1] _____________
+
+tmp_path = PosixPath('/private/var/folders/vr/jd0mj7hn6lzbkvnrtzpw64780000gn/T/pytest-of-azuma/pytest-13/test_process_pool_client_train6')
+num_parallels = 1, cid_list = [0, 1, 2]
+
+    @pytest.mark.parametrize("num_parallels", [1, 2, 4])
+    @pytest.mark.parametrize("cid_list", [[], [42], [0, 1, 2]])
+    def test_process_pool_client_trainer_storage(
+        tmp_path: Path, num_parallels: int, cid_list: list[int]
+    ) -> None:
+        trainer = DummyProcessPoolClientTrainer(
+            num_parallels=num_parallels,
+            share_dir=tmp_path,
+            device="cpu",
+            ipc_mode="storage",
+        )
+    
+        dummy_payload = DownlinkPackage(message="<server_to_client>")
+    
+>       trainer.local_process(dummy_payload, cid_list)
+
+tests/test_core/test_client_trainer.py:110: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/blazefl/core/client_trainer.py:170: in local_process
+    package = torch.load(result, weights_only=False)
+.venv/lib/python3.12/site-packages/torch/serialization.py:1525: in load
+    return _load(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+zip_file = <torch.PyTorchFileReader object at 0x10ae63730>, map_location = None
+pickle_module = <module 'pickle' from '/Users/azuma/.pyenv/versions/3.12.7/lib/python3.12/pickle.py'>
+pickle_file = 'data.pkl', overall_storage = None
+pickle_load_args = {'encoding': 'utf-8'}, version = b'1'
+byteordername = 'byteorder'
+config = <module 'torch.utils.serialization.config' from '/Users/azuma/Documents/Programming/blazefl/.venv/lib/python3.12/site-packages/torch/utils/serialization/config.py'>
+persistent_load = <function _load.<locals>.persistent_load at 0x10ae06160>
+UnpicklerWrapper = <class 'torch.serialization._load.<locals>.UnpicklerWrapper'>
+
+    def _load(
+        zip_file,
+        map_location,
+        pickle_module,
+        pickle_file="data.pkl",
+        overall_storage=None,
+        **pickle_load_args,
+    ):
+        restore_location = _get_restore_location(map_location)
+    
+        loaded_storages = {}
+    
+        can_calculate_storage_offsets = False
+        if zip_file.has_record(".format_version"):
+            version = zip_file.get_record(".format_version")
+            can_calculate_storage_offsets = version >= b"1"
+    
+        # check if byteswapping is needed
+        byteordername = "byteorder"
+        byteorderdata = None
+        if zip_file.has_record(byteordername):
+            byteorderdata = zip_file.get_record(byteordername)
+            if byteorderdata not in [b"little", b"big"]:
+                raise ValueError("Unknown endianness type: " + byteorderdata.decode())
+        elif (
+            get_default_load_endianness() == LoadEndianness.LITTLE
+            or get_default_load_endianness() is None
+        ):
+            byteorderdata = b"little"
+        elif get_default_load_endianness() == LoadEndianness.BIG:
+            byteorderdata = b"big"
+        elif get_default_load_endianness() == LoadEndianness.NATIVE:
+            pass
+        else:
+            raise ValueError("Invalid load endianness type")
+    
+        storage_alignment = 64
+        if zip_file.has_record(".storage_alignment"):
+            storage_alignment = int(zip_file.get_record(".storage_alignment"))
+    
+        if (
+            not zip_file.has_record(byteordername)
+            and get_default_load_endianness() is None
+            and sys.byteorder == "big"
+        ):
+            # Default behaviour was changed
+            # See https://github.com/pytorch/pytorch/issues/101688
+            warnings.warn(
+                "The default load endianness for checkpoints without a byteorder mark "
+                "on big endian machines was changed from 'native' to 'little' endian, "
+                "to avoid this behavior please use "
+                "torch.serialization.set_default_load_endianness to set "
+                "the desired default load endianness",
+                UserWarning,
+            )
+    
+        from torch.utils.serialization import config
+    
+        calculate_storage_offsets = config.load.calculate_storage_offsets
+        run_debug_asserts = os.environ.get("TORCH_SERIALIZATION_DEBUG", "0") == "1"
+        current_offset = None
+        # constants from miniz.h/miniz.c
+        data_descripter_size64 = 24
+        data_descripter_size32 = 16
+        mz_uint32_max = 0xFFFFFFFF
+        offsets: dict[str, int] = dict()
+    
+        def _get_offset(key, name, numel):
+            """
+            Return the offset of the storage associated with key with record name `name` and size numel.
+            It is expected that the zipfile header of this storage starts at current_offset.
+    
+            WARNING: This function relies on the behavior of the zipwriter in miniz.c. In particular,
+            the behavior of `mz_zip_writer_add_mem_ex_v2`. The behavior of this function must be kept
+            in sync with that of miniz!
+    
+            After reading a storage of size numel that starts at storage_offset
+            if it is the first time that storage was read, update nonlocal variable
+            current_offset to the start of the next zipfile header by incrementing
+            it by numel and the data descriptor size.
+            """
+            nonlocal current_offset, offsets
+            if name in offsets:
+                storage_offset = offsets[name]
+                return storage_offset
+    
+            if current_offset is None:
+                assert key == "0"
+                current_offset = zip_file.get_record_offset(name)
+                local_header_offset = zip_file.get_record_header_offset(name)
+                storage_offset = current_offset
+            else:
+                storage_offset = zip_file.get_record_offset_no_read(
+                    current_offset, name, numel, storage_alignment
+                )
+                local_header_offset = current_offset
+    
+            # This is only actually needed for storages that have typed_storage._data_ptr() == 0
+            # after being read. Otherwise persistent_load would never "re-call" load_tensor
+            # for a given key.
+            offsets[name] = storage_offset
+    
+            # Increment current_offset of offset where next zipfile header starts
+            current_offset = storage_offset + numel
+            # add size of data descriptor after payload
+            if numel > 0:
+                if local_header_offset >= mz_uint32_max or numel >= mz_uint32_max:
+                    current_offset += data_descripter_size64
+                else:
+                    current_offset += data_descripter_size32
+    
+            return storage_offset
+    
+        def load_tensor(dtype, numel, key, location):
+            name = f"data/{key}"
+            if torch._guards.detect_fake_mode(None) is not None:
+                nbytes = numel * torch._utils._element_size(dtype)
+                storage = torch.UntypedStorage(nbytes, device="meta")
+                storage._checkpoint_offset = zip_file.get_record_offset(name)
+            elif _serialization_tls.skip_data:
+                nbytes = numel * torch._utils._element_size(dtype)
+                storage = torch.UntypedStorage(nbytes)
+            elif overall_storage is not None:
+                if can_calculate_storage_offsets and calculate_storage_offsets:
+                    storage_offset = _get_offset(key, name, numel)
+                    if run_debug_asserts:
+                        if storage_offset != zip_file.get_record_offset(name):
+                            raise RuntimeError(
+                                "This is a debug assert that was run as the `TORCH_SERIALIZATION_DEBUG` environment "
+                                f"variable was set: Incorrect offset for {name}, got {storage_offset} expected "
+                                f"{zip_file.get_record_offset(name)}"
+                            )
+                else:
+                    storage_offset = zip_file.get_record_offset(name)
+                storage = overall_storage[storage_offset : storage_offset + numel]
+            else:
+                if can_calculate_storage_offsets and run_debug_asserts:
+                    # This is debug code that we use to test the validity of
+                    # torch.utils.serialization.config.load.calculate_storage_offsets throughout CI
+                    storage_offset = _get_offset(key, name, numel)
+                    if storage_offset != zip_file.get_record_offset(name):
+                        raise RuntimeError(
+                            "This is a debug assert that was run as the `TORCH_SERIALIZATION_DEBUG` environment "
+                            f"variable was set: Incorrect offset for {name}, got {storage_offset} expected "
+                            f"{zip_file.get_record_offset(name)}"
+                        )
+                storage = (
+                    zip_file.get_storage_from_record(name, numel, torch.UntypedStorage)
+                    ._typed_storage()
+                    ._untyped_storage
+                )
+            # swap here if byteswapping is needed
+            if byteorderdata is not None:
+                if byteorderdata.decode() != sys.byteorder:
+                    storage.byteswap(dtype)
+    
+            # TODO: Once we decide to break serialization FC, we can
+            # stop wrapping with TypedStorage
+    
+            if torch._guards.detect_fake_mode(None) is None:
+                wrap_storage = restore_location(storage, location)
+            else:
+                storage._fake_device = location
+                wrap_storage = storage
+    
+            typed_storage = torch.storage.TypedStorage(
+                wrap_storage=wrap_storage,
+                dtype=dtype,
+                _internal=True,
+            )
+    
+            if typed_storage._data_ptr() != 0:
+                loaded_storages[key] = typed_storage
+    
+            return typed_storage
+    
+        def persistent_load(saved_id):
+            assert isinstance(saved_id, tuple)
+            typename = _maybe_decode_ascii(saved_id[0])
+            data = saved_id[1:]
+    
+            assert typename == "storage", (
+                f"Unknown typename for persistent_load, expected 'storage' but got '{typename}'"
+            )
+            storage_type, key, location, numel = data
+            if storage_type is torch.UntypedStorage:
+                dtype = torch.uint8
+            else:
+                dtype = storage_type.dtype
+    
+            if key in loaded_storages:
+                typed_storage = loaded_storages[key]
+            else:
+                nbytes = numel * torch._utils._element_size(dtype)
+                typed_storage = load_tensor(
+                    dtype, nbytes, key, _maybe_decode_ascii(location)
+                )
+    
+            return typed_storage
+    
+        load_module_mapping: dict[str, str] = {
+            # See https://github.com/pytorch/pytorch/pull/51633
+            "torch.tensor": "torch._tensor"
+        }
+    
+        # Need to subclass Unpickler instead of directly monkey-patching the find_class method
+        # because it's marked readonly in pickle.
+        # The type: ignore is because mypy can't statically determine the type of this class.
+        class UnpicklerWrapper(pickle_module.Unpickler):  # type: ignore[name-defined]
+            # from https://stackoverflow.com/questions/13398462/unpickling-python-objects-with-a-changed-module-path/13405732
+            # Lets us override the imports that pickle uses when unpickling an object.
+            # This is useful for maintaining BC if we change a module path that tensor instantiation relies on.
+            def find_class(self, mod_name, name):
+                if type(name) is str and "Storage" in name:
+                    try:
+                        return StorageType(name)
+                    except KeyError:
+                        pass
+                mod_name = load_module_mapping.get(mod_name, mod_name)
+                return super().find_class(mod_name, name)
+    
+        # Load the data (which may in turn use `persistent_load` to load tensors)
+>       data_file = io.BytesIO(zip_file.get_record(pickle_file))
+E       RuntimeError: PytorchStreamReader failed reading file data.pkl: file read failed
+
+.venv/lib/python3.12/site-packages/torch/serialization.py:2106: RuntimeError
+----------------------------- Captured stderr call -----------------------------
+Client:   0%|          | 0/3 [00:00<?, ?it/s]                                             
+____________ test_process_pool_client_trainer_storage[cid_list2-2] _____________
+
+tmp_path = PosixPath('/private/var/folders/vr/jd0mj7hn6lzbkvnrtzpw64780000gn/T/pytest-of-azuma/pytest-13/test_process_pool_client_train7')
+num_parallels = 2, cid_list = [0, 1, 2]
+
+    @pytest.mark.parametrize("num_parallels", [1, 2, 4])
+    @pytest.mark.parametrize("cid_list", [[], [42], [0, 1, 2]])
+    def test_process_pool_client_trainer_storage(
+        tmp_path: Path, num_parallels: int, cid_list: list[int]
+    ) -> None:
+        trainer = DummyProcessPoolClientTrainer(
+            num_parallels=num_parallels,
+            share_dir=tmp_path,
+            device="cpu",
+            ipc_mode="storage",
+        )
+    
+        dummy_payload = DownlinkPackage(message="<server_to_client>")
+    
+>       trainer.local_process(dummy_payload, cid_list)
+
+tests/test_core/test_client_trainer.py:110: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/blazefl/core/client_trainer.py:170: in local_process
+    package = torch.load(result, weights_only=False)
+.venv/lib/python3.12/site-packages/torch/serialization.py:1525: in load
+    return _load(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+zip_file = <torch.PyTorchFileReader object at 0x10ae335b0>, map_location = None
+pickle_module = <module 'pickle' from '/Users/azuma/.pyenv/versions/3.12.7/lib/python3.12/pickle.py'>
+pickle_file = 'data.pkl', overall_storage = None
+pickle_load_args = {'encoding': 'utf-8'}
+
+    def _load(
+        zip_file,
+        map_location,
+        pickle_module,
+        pickle_file="data.pkl",
+        overall_storage=None,
+        **pickle_load_args,
+    ):
+        restore_location = _get_restore_location(map_location)
+    
+        loaded_storages = {}
+    
+        can_calculate_storage_offsets = False
+        if zip_file.has_record(".format_version"):
+>           version = zip_file.get_record(".format_version")
+E           RuntimeError: PytorchStreamReader failed reading file .format_version: file read failed
+
+.venv/lib/python3.12/site-packages/torch/serialization.py:1898: RuntimeError
+----------------------------- Captured stderr call -----------------------------
+Client:   0%|          | 0/3 [00:00<?, ?it/s]                                             
+____________ test_process_pool_client_trainer_storage[cid_list2-4] _____________
+
+tmp_path = PosixPath('/private/var/folders/vr/jd0mj7hn6lzbkvnrtzpw64780000gn/T/pytest-of-azuma/pytest-13/test_process_pool_client_train8')
+num_parallels = 4, cid_list = [0, 1, 2]
+
+    @pytest.mark.parametrize("num_parallels", [1, 2, 4])
+    @pytest.mark.parametrize("cid_list", [[], [42], [0, 1, 2]])
+    def test_process_pool_client_trainer_storage(
+        tmp_path: Path, num_parallels: int, cid_list: list[int]
+    ) -> None:
+        trainer = DummyProcessPoolClientTrainer(
+            num_parallels=num_parallels,
+            share_dir=tmp_path,
+            device="cpu",
+            ipc_mode="storage",
+        )
+    
+        dummy_payload = DownlinkPackage(message="<server_to_client>")
+    
+        trainer.local_process(dummy_payload, cid_list)
+    
+        assert len(trainer.cache) == len(cid_list)
+        for i, cid in enumerate(cid_list):
+            result = trainer.cache[i]
+            assert result.cid == cid
+>           assert result.message == "<server_to_client><client_to_server>"
+E           AssertionError: assert '<server_to_c...nt_to_server>' == '<server_to_c...nt_to_server>'
+E             
+E             - <server_to_client><client_to_server>
+E             + <server_to_client><client_to_server><client_to_server><client_to_server>
+
+tests/test_core/test_client_trainer.py:116: AssertionError
+----------------------------- Captured stderr call -----------------------------
+Client:   0%|          | 0/3 [00:00<?, ?it/s]Client:  33%|███▎      | 1/3 [00:00<00:01,  1.05it/s]                                                     
+=========================== short test summary info ============================
+FAILED tests/test_contrib/test_fedavg.py::test_server_and_process_pool_integration
+FAILED tests/test_core/test_client_trainer.py::test_process_pool_client_trainer_storage[cid_list2-1]
+FAILED tests/test_core/test_client_trainer.py::test_process_pool_client_trainer_storage[cid_list2-2]
+FAILED tests/test_core/test_client_trainer.py::test_process_pool_client_trainer_storage[cid_list2-4]
+=================== 4 failed, 22 passed, 2 skipped in 12.44s ===================

@@ -1,6 +1,7 @@
+from blazefl.utils import move_tensor_to_shared_memory as move_tensor_to_shared_memory
 from multiprocessing.pool import ApplyResult as ApplyResult
 from pathlib import Path
-from typing import Protocol, TypeVar
+from typing import Literal, Protocol, TypeVar
 
 UplinkPackage = TypeVar('UplinkPackage')
 DownlinkPackage = TypeVar('DownlinkPackage', contravariant=True)
@@ -8,18 +9,19 @@ DownlinkPackage = TypeVar('DownlinkPackage', contravariant=True)
 class BaseClientTrainer(Protocol[UplinkPackage, DownlinkPackage]):
     def uplink_package(self) -> list[UplinkPackage]: ...
     def local_process(self, payload: DownlinkPackage, cid_list: list[int]) -> None: ...
-DiskSharedData = TypeVar('DiskSharedData', covariant=True)
+ClientConfig = TypeVar('ClientConfig')
 
-class ProcessPoolClientTrainer(BaseClientTrainer[UplinkPackage, DownlinkPackage], Protocol[UplinkPackage, DownlinkPackage, DiskSharedData]):
+class ProcessPoolClientTrainer(BaseClientTrainer[UplinkPackage, DownlinkPackage], Protocol[UplinkPackage, DownlinkPackage, ClientConfig]):
     num_parallels: int
     share_dir: Path
     device: str
     device_count: int
     cache: list[UplinkPackage]
-    def get_shared_data(self, cid: int, payload: DownlinkPackage) -> DiskSharedData: ...
+    ipc_mode: Literal['storage', 'shared_memory']
+    def get_client_config(self, cid: int) -> ClientConfig: ...
     def get_client_device(self, cid: int) -> str: ...
     @staticmethod
-    def process_client(path: Path, device: str) -> Path: ...
+    def worker(config: ClientConfig | Path, payload: DownlinkPackage | Path, device: str) -> UplinkPackage | Path: ...
     def local_process(self, payload: DownlinkPackage, cid_list: list[int]) -> None: ...
 
 class ThreadPoolClientTrainer(BaseClientTrainer[UplinkPackage, DownlinkPackage], Protocol[UplinkPackage, DownlinkPackage]):
@@ -27,6 +29,6 @@ class ThreadPoolClientTrainer(BaseClientTrainer[UplinkPackage, DownlinkPackage],
     device: str
     device_count: int
     cache: list[UplinkPackage]
-    def process_client(self, cid: int, device: str, payload: DownlinkPackage) -> UplinkPackage: ...
+    def worker(self, cid: int, device: str, payload: DownlinkPackage) -> UplinkPackage: ...
     def get_client_device(self, cid: int) -> str: ...
     def local_process(self, payload: DownlinkPackage, cid_list: list[int]) -> None: ...

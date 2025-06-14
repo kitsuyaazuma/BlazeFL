@@ -133,8 +133,9 @@ def test_server_and_base_integration(model_selector, partitioned_dataset, device
     assert server.if_stop() is True
 
 
+@pytest.mark.parametrize("ipc_mode", ["storage", "shared_memory"])
 def test_server_and_process_pool_integration(
-    model_selector, partitioned_dataset, device, tmp_share_dir, tmp_state_dir
+    model_selector, partitioned_dataset, device, tmp_share_dir, tmp_state_dir, ipc_mode
 ):
     model_name = "dummy"
     global_round = 2
@@ -170,6 +171,7 @@ def test_server_and_process_pool_integration(
         lr=lr,
         seed=seed,
         num_parallels=num_parallels,
+        ipc_mode=ipc_mode,
     )
 
     for round_ in range(1, global_round + 1):
@@ -230,6 +232,7 @@ def test_server_and_process_pool_integration_keyboard_interrupt(
         lr=lr,
         seed=seed,
         num_parallels=num_parallels,
+        ipc_mode="storage",
     )
 
     cids = server.sample_clients()
