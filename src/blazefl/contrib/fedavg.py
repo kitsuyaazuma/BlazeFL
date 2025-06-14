@@ -449,7 +449,6 @@ class FedAvgClientConfig:
         lr (float): Learning rate for the optimizer.
         cid (int): Client ID.
         seed (int): Seed for reproducibility.
-        payload (FedAvgDownlinkPackage): Downlink package with global model parameters.
         state_path (Path): Path to save the client's random state.
     """
 
@@ -488,6 +487,8 @@ class FedAvgProcessPoolClientTrainer(
         lr (float): Learning rate for the optimizer.
         seed (int): Seed for reproducibility.
         num_parallels (int): Number of parallel processes for training.
+        ipc_mode (Literal["storage", "shared_memory"]):
+            Inter-process communication mode.
         device_count (int | None): Number of CUDA devices available (if using GPU).
     """
 
@@ -554,16 +555,23 @@ class FedAvgProcessPoolClientTrainer(
         """
         Process a single client's local training and evaluation.
 
-        This method is executed by a parallel process and handles data loading,
-        training, evaluation, and saving results to a shared file.
+        This method is executed by a worker process and handles loading client
+        configuration and payload, performing the client-specific training,
+        and returning the result.
 
         Args:
-            path (Path): Path to the shared data file containing client-specific
-            information.
-            device (str): Device to use for processing.
+            config (FedAvgClientConfig | Path):
+                The client's configuration data, or a path to a file containing
+                the configuration if `ipc_mode` is "storage".
+            payload (FedAvgDownlinkPackage | Path):
+                The downlink payload from the server, or a path to a file
+                containing the payload if `ipc_mode` is "storage".
+            device (str): Device to use for processing (e.g., "cpu", "cuda:0").
 
         Returns:
-            Path: Path to the file with the processed results.
+            FedAvgUplinkPackage | Path:
+                The uplink package containing the client's results, or a path to
+                a file containing the package if `ipc_mode` is "storage".
         """
 
         def _storage_worker(
@@ -675,15 +683,13 @@ class FedAvgProcessPoolClientTrainer(
 
     def get_client_config(self, cid: int) -> FedAvgClientConfig:
         """
-        Generate the shared data for a specific client.
+        Generate the client configuration for a specific client.
 
         Args:
             cid (int): Client ID.
-            payload (FedAvgDownlinkPackage): Downlink package with global model
-            parameters.
 
         Returns:
-            FedAvgDiskSharedData: Shared data structure for the client.
+            FedAvgClientConfig: Client configuration data structure.
         """
         data = FedAvgClientConfig(
             model_selector=self.model_selector,

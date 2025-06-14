@@ -65,7 +65,12 @@ class ProcessPoolClientTrainer(
     Attributes:
         num_parallels (int): Number of parallel processes to use for client training.
         share_dir (Path): Directory path for sharing data between processes.
+        device (str): The primary device to use for computation (e.g., "cpu", "cuda").
+        device_count (int): The number of available CUDA devices, if `device` is "cuda".
         cache (list[UplinkPackage]): Cache to store uplink packages from clients.
+        ipc_mode (Literal["storage", "shared_memory"]): Inter-process communication
+            mode. "storage" uses disk for data exchange, "shared_memory" uses
+            shared memory for tensor data. Defaults to "storage".
 
     Raises:
         NotImplementedError: If the abstract methods are not implemented in a subclass.
@@ -109,14 +114,25 @@ class ProcessPoolClientTrainer(
         config: ClientConfig | Path, payload: DownlinkPackage | Path, device: str
     ) -> UplinkPackage | Path:
         """
-        Process a single client based on the provided path.
+        Process a single client's training task.
+
+        This method is executed by each worker process in the pool.
+        It handles loading client configuration and payload, performing
+        the client-specific operations, and returning the result.
 
         Args:
-            path (Path): Path to the client's data file.
-            device (str): Device to use for processing.
+            config (ClientConfig | Path):
+                The client's configuration data, or a path to a file containing
+                the configuration if `ipc_mode` is "storage".
+            payload (DownlinkPackage | Path):
+                The downlink payload from the server, or a path to a file
+                containing the payload if `ipc_mode` is "storage".
+            device (str): Device to use for processing (e.g., "cpu", "cuda:0").
 
         Returns:
-            Path: Path to the processed client's data file.
+            UplinkPackage | Path:
+                The uplink package containing the client's results, or a path
+                to a file containing the package if `ipc_mode` is "storage".
         """
         ...
 
@@ -187,7 +203,19 @@ class ThreadPoolClientTrainer(
         cid: int,
         device: str,
         payload: DownlinkPackage,
-    ) -> UplinkPackage: ...
+    ) -> UplinkPackage:
+        """
+        Process a single client's training task in a thread.
+
+        Args:
+            cid (int): The client ID.
+            device (str): The device to use for processing this client.
+            payload (DownlinkPackage): The data package received from the server.
+
+        Returns:
+            UplinkPackage: The uplink package containing the client's results.
+        """
+        ...
 
     def get_client_device(self, cid: int) -> str:
         if self.device == "cuda":
