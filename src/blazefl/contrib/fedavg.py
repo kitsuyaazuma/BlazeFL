@@ -621,7 +621,7 @@ class FedAvgProcessPoolClientTrainer(
         else:
             raise TypeError(
                 "Invalid types for config and payload."
-                "Expected ClientConfig and DownlinkPackage or Path."
+                "Expected FedAvgClientConfig and FedAvgDownlinkPackage or Path."
             )
 
     @staticmethod
