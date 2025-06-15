@@ -1,5 +1,7 @@
+import logging
 import multiprocessing as mp
 import signal
+import threading
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from multiprocessing.pool import ApplyResult
 from pathlib import Path
@@ -197,6 +199,7 @@ class ThreadPoolClientTrainer(
     device: str
     device_count: int
     cache: list[UplinkPackage]
+    stop_event: threading.Event | None
 
     def worker(
         self,
@@ -223,20 +226,31 @@ class ThreadPoolClientTrainer(
         return self.device
 
     def local_process(self, payload: DownlinkPackage, cid_list: list[int]) -> None:
-        with ThreadPoolExecutor(max_workers=self.num_parallels) as executor:
-            futures = []
-            for cid in cid_list:
-                device = self.get_client_device(cid)
-                future = executor.submit(
-                    self.worker,
-                    cid,
-                    device,
-                    payload,
-                )
-                futures.append(future)
+        if self.stop_event is None:
+            self.stop_event = threading.Event()
+        self.stop_event.clear()
+        try:
+            with ThreadPoolExecutor(max_workers=self.num_parallels) as executor:
+                futures = []
+                for cid in cid_list:
+                    device = self.get_client_device(cid)
+                    future = executor.submit(
+                        self.worker,
+                        cid,
+                        device,
+                        payload,
+                    )
+                    futures.append(future)
 
-            for future in tqdm(
-                as_completed(futures), total=len(futures), desc="Client", leave=False
-            ):
-                result = future.result()
-                self.cache.append(result)
+                for future in tqdm(
+                    as_completed(futures),
+                    total=len(futures),
+                    desc="Client",
+                    leave=False,
+                ):
+                    result = future.result()
+                    self.cache.append(result)
+        except KeyboardInterrupt:
+            logging.warning("Training interrupted by user.")
+            self.stop_event.set()
+        return

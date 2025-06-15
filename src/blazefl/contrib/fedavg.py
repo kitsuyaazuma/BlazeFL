@@ -1,4 +1,5 @@
 import random
+import threading
 from copy import deepcopy
 from dataclasses import dataclass
 from pathlib import Path
@@ -14,6 +15,7 @@ from blazefl.core import (
     ModelSelector,
     PartitionedDataset,
     ProcessPoolClientTrainer,
+    ThreadPoolClientTrainer,
 )
 from blazefl.utils import (
     RandomState,
@@ -640,6 +642,7 @@ class FedAvgProcessPoolClientTrainer(
         device: str,
         epochs: int,
         lr: float,
+        stop_event: threading.Event | None = None,
     ) -> FedAvgUplinkPackage:
         """
         Train the model with the given training data loader.
@@ -664,6 +667,8 @@ class FedAvgProcessPoolClientTrainer(
 
         data_size = 0
         for _ in range(epochs):
+            if stop_event is not None and stop_event.is_set():
+                break
             for data, target in train_loader:
                 data = data.to(device)
                 target = target.to(device)
@@ -711,6 +716,70 @@ class FedAvgProcessPoolClientTrainer(
         Returns:
             list[FedAvgUplinkPackage]: A list of uplink packages.
         """
+        package = deepcopy(self.cache)
+        self.cache = []
+        return package
+
+
+class FedAvgThreadPoolClientTrainer(
+    ThreadPoolClientTrainer[
+        FedAvgUplinkPackage,
+        FedAvgDownlinkPackage,
+    ]
+):
+    def __init__(
+        self,
+        model_selector: ModelSelector,
+        model_name: str,
+        dataset: PartitionedDataset,
+        device: str,
+        num_clients: int,
+        epochs: int,
+        batch_size: int,
+        lr: float,
+        seed: int,
+        num_parallels: int,
+    ) -> None:
+        self.num_parallels = num_parallels
+        self.device = device
+        if self.device == "cuda":
+            self.device_count = torch.cuda.device_count()
+        self.cache: list[FedAvgUplinkPackage] = []
+
+        self.model_selector = model_selector
+        self.model_name = model_name
+        self.dataset = dataset
+        self.epochs = epochs
+        self.batch_size = batch_size
+        self.lr = lr
+        self.num_clients = num_clients
+        self.seed = seed
+        self.stop_event = None
+
+    def worker(
+        self,
+        cid: int,
+        device: str,
+        payload: FedAvgDownlinkPackage,
+    ) -> FedAvgUplinkPackage:
+        model = self.model_selector.select_model(self.model_name)
+        train_loader = self.dataset.get_dataloader(
+            type_="train",
+            cid=cid,
+            batch_size=self.batch_size,
+        )
+        package = FedAvgProcessPoolClientTrainer.train(
+            model=model,
+            model_parameters=payload.model_parameters,
+            train_loader=train_loader,
+            device=device,
+            epochs=self.epochs,
+            lr=self.lr,
+            stop_event=self.stop_event,
+        )
+        return package
+
+    def uplink_package(self) -> list[FedAvgUplinkPackage]:
         package = deepcopy(self.cache)
         self.cache = []
         return package
