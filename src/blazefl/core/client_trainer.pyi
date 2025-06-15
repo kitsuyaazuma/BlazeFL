@@ -1,3 +1,4 @@
+import threading
 from blazefl.utils import move_tensor_to_shared_memory as move_tensor_to_shared_memory
 from multiprocessing.pool import ApplyResult as ApplyResult
 from pathlib import Path
@@ -29,6 +30,7 @@ class ThreadPoolClientTrainer(BaseClientTrainer[UplinkPackage, DownlinkPackage],
     device: str
     device_count: int
     cache: list[UplinkPackage]
+    stop_event: threading.Event | None
     def worker(self, cid: int, device: str, payload: DownlinkPackage) -> UplinkPackage: ...
     def get_client_device(self, cid: int) -> str: ...
     def local_process(self, payload: DownlinkPackage, cid_list: list[int]) -> None: ...
