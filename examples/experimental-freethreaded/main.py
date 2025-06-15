@@ -7,12 +7,12 @@ import hydra
 import torch
 import torch.multiprocessing as mp
 from blazefl.contrib import (
-    FedAvgParallelClientTrainer,
-    FedAvgSerialClientTrainer,
-    FedAvgServerHandler,
+    FedAvgBaseClientTrainer,
+    FedAvgBaseServerHandler,
+    FedAvgProcessPoolClientTrainer,
 )
 from blazefl.contrib.fedavg import FedAvgDownlinkPackage, FedAvgUplinkPackage
-from blazefl.core import ModelSelector, MultiThreadClientTrainer, PartitionedDataset
+from blazefl.core import ModelSelector, PartitionedDataset, ThreadPoolClientTrainer
 from blazefl.utils import seed_everything
 from omegaconf import DictConfig, OmegaConf
 
@@ -21,7 +21,7 @@ from models import FedAvgModelSelector
 
 
 class FedAvgMultiThreadClientTrainer(
-    MultiThreadClientTrainer[
+    ThreadPoolClientTrainer[
         FedAvgUplinkPackage,
         FedAvgDownlinkPackage,
     ]
@@ -54,7 +54,7 @@ class FedAvgMultiThreadClientTrainer(
         self.num_clients = num_clients
         self.seed = seed
 
-    def process_client(
+    def worker(
         self,
         cid: int,
         device: str,
@@ -66,7 +66,7 @@ class FedAvgMultiThreadClientTrainer(
             cid=cid,
             batch_size=self.batch_size,
         )
-        package = FedAvgParallelClientTrainer.train(
+        package = FedAvgProcessPoolClientTrainer.train(
             model=model,
             model_parameters=payload.model_parameters,
             train_loader=train_loader,
@@ -85,9 +85,9 @@ class FedAvgMultiThreadClientTrainer(
 class FedAvgPipeline:
     def __init__(
         self,
-        handler: FedAvgServerHandler,
-        trainer: FedAvgSerialClientTrainer
-        | FedAvgParallelClientTrainer
+        handler: FedAvgBaseServerHandler,
+        trainer: FedAvgBaseClientTrainer
+        | FedAvgProcessPoolClientTrainer
         | FedAvgMultiThreadClientTrainer,
     ) -> None:
         self.handler = handler
@@ -145,7 +145,7 @@ def main(cfg: DictConfig):
     )
     model_selector = FedAvgModelSelector(num_classes=10)
 
-    handler = FedAvgServerHandler(
+    handler = FedAvgBaseServerHandler(
         model_selector=model_selector,
         model_name=cfg.model_name,
         dataset=dataset,
@@ -156,14 +156,14 @@ def main(cfg: DictConfig):
         batch_size=cfg.batch_size,
     )
     trainer: (
-        FedAvgSerialClientTrainer
-        | FedAvgParallelClientTrainer
+        FedAvgBaseClientTrainer
+        | FedAvgProcessPoolClientTrainer
         | FedAvgMultiThreadClientTrainer
         | None
     ) = None
     match cfg.execution_mode:
         case "serial":
-            trainer = FedAvgSerialClientTrainer(
+            trainer = FedAvgBaseClientTrainer(
                 model_selector=model_selector,
                 model_name=cfg.model_name,
                 dataset=dataset,
@@ -174,7 +174,7 @@ def main(cfg: DictConfig):
                 batch_size=cfg.batch_size,
             )
         case "multi-process":
-            trainer = FedAvgParallelClientTrainer(
+            trainer = FedAvgProcessPoolClientTrainer(
                 model_selector=model_selector,
                 model_name=cfg.model_name,
                 dataset=dataset,
@@ -187,6 +187,7 @@ def main(cfg: DictConfig):
                 lr=cfg.lr,
                 batch_size=cfg.batch_size,
                 num_parallels=cfg.num_parallels,
+                ipc_mode=cfg.ipc_mode,
             )
         case "multi-thread":
             trainer = FedAvgMultiThreadClientTrainer(

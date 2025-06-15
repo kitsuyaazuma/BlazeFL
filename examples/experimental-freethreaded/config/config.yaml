@@ -15,3 +15,4 @@ dataset_split_dir: /tmp/experimental-freethreaded/split
 share_dir: /tmp/experimental-freethreaded/share
 state_dir: /tmp/experimental-freethreaded/state
 execution_mode: multi-thread
+ipc_mode: storage
