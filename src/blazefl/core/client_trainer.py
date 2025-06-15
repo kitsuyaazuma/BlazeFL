@@ -250,6 +250,6 @@ class ThreadPoolClientTrainer(
                     result = future.result()
                     self.cache.append(result)
         except KeyboardInterrupt:
-            print("Training interrupted by user.")
+            logging.warning("Training interrupted by user.")
             self.stop_event.set()
         return
