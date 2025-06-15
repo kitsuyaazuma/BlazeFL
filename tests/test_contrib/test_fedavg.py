@@ -198,7 +198,7 @@ def run_local_process(trainer, downlink, cids):
         trainer.local_process(downlink, cids)
 
 
-def test_base_server_and_process_pool_trainer_integration_keyboard_interrupt(
+def test_base_handler_and_process_pool_trainer_integration_keyboard_interrupt(
     model_selector, partitioned_dataset, device, tmp_share_dir, tmp_state_dir
 ):
     model_name = "dummy"
