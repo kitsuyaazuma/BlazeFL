@@ -10,9 +10,10 @@ import torch
 from torch.utils.data import DataLoader, Dataset
 
 from src.blazefl.contrib.fedavg import (
-    FedAvgParallelClientTrainer,
-    FedAvgSerialClientTrainer,
-    FedAvgServerHandler,
+    FedAvgBaseClientTrainer,
+    FedAvgBaseServerHandler,
+    FedAvgProcessPoolClientTrainer,
+    FedAvgThreadPoolClientTrainer,
 )
 from src.blazefl.core import ModelSelector, PartitionedDataset
 
@@ -86,7 +87,9 @@ def tmp_state_dir(tmp_path):
     return state_dir
 
 
-def test_server_and_serial_integration(model_selector, partitioned_dataset, device):
+def test_base_server_and_base_trainer_integration(
+    model_selector, partitioned_dataset, device
+):
     model_name = "dummy"
     global_round = 1
     num_clients = 3
@@ -95,7 +98,7 @@ def test_server_and_serial_integration(model_selector, partitioned_dataset, devi
     batch_size = 2
     lr = 0.01
 
-    server = FedAvgServerHandler(
+    server = FedAvgBaseServerHandler(
         model_selector=model_selector,
         model_name=model_name,
         dataset=partitioned_dataset,
@@ -106,7 +109,7 @@ def test_server_and_serial_integration(model_selector, partitioned_dataset, devi
         batch_size=batch_size,
     )
 
-    trainer = FedAvgSerialClientTrainer(
+    trainer = FedAvgBaseClientTrainer(
         model_selector=model_selector,
         model_name=model_name,
         dataset=partitioned_dataset,
@@ -133,8 +136,9 @@ def test_server_and_serial_integration(model_selector, partitioned_dataset, devi
     assert server.if_stop() is True
 
 
-def test_server_and_parallel_integration(
-    model_selector, partitioned_dataset, device, tmp_share_dir, tmp_state_dir
+@pytest.mark.parametrize("ipc_mode", ["storage", "shared_memory"])
+def test_base_handler_and_process_pool_trainer_integration(
+    model_selector, partitioned_dataset, device, tmp_share_dir, tmp_state_dir, ipc_mode
 ):
     model_name = "dummy"
     global_round = 2
@@ -146,7 +150,7 @@ def test_server_and_parallel_integration(
     seed = 42
     num_parallels = 2
 
-    server = FedAvgServerHandler(
+    server = FedAvgBaseServerHandler(
         model_selector=model_selector,
         model_name=model_name,
         dataset=partitioned_dataset,
@@ -157,11 +161,144 @@ def test_server_and_parallel_integration(
         batch_size=batch_size,
     )
 
-    trainer = FedAvgParallelClientTrainer(
+    trainer = FedAvgProcessPoolClientTrainer(
         model_selector=model_selector,
         model_name=model_name,
         share_dir=tmp_share_dir,
         state_dir=tmp_state_dir,
+        dataset=partitioned_dataset,
+        device=device,
+        num_clients=num_clients,
+        epochs=epochs,
+        batch_size=batch_size,
+        lr=lr,
+        seed=seed,
+        num_parallels=num_parallels,
+        ipc_mode=ipc_mode,
+    )
+
+    for round_ in range(1, global_round + 1):
+        cids = server.sample_clients()
+        downlink = server.downlink_package()
+        trainer.local_process(downlink, cids)
+        uplinks = trainer.uplink_package()
+        assert len(uplinks) == num_clients
+
+        done = False
+        for pkg in uplinks:
+            done = server.load(pkg)
+        assert done is True
+        assert server.round == round_
+
+    assert server.if_stop() is True
+
+
+def run_local_process(trainer, downlink, cids):
+    with suppress(KeyboardInterrupt):
+        trainer.local_process(downlink, cids)
+
+
+def test_base_handler_and_process_pool_trainer_integration_keyboard_interrupt(
+    model_selector, partitioned_dataset, device, tmp_share_dir, tmp_state_dir
+):
+    model_name = "dummy"
+    global_round = 1
+    num_clients = 10
+    sample_ratio = 1.0
+    epochs = 10**5
+    batch_size = 2
+    lr = 0.01
+    seed = 42
+    num_parallels = 10
+
+    server = FedAvgBaseServerHandler(
+        model_selector=model_selector,
+        model_name=model_name,
+        dataset=partitioned_dataset,
+        global_round=global_round,
+        num_clients=num_clients,
+        sample_ratio=sample_ratio,
+        device=device,
+        batch_size=batch_size,
+    )
+
+    trainer = FedAvgProcessPoolClientTrainer(
+        model_selector=model_selector,
+        model_name=model_name,
+        share_dir=tmp_share_dir,
+        state_dir=tmp_state_dir,
+        dataset=partitioned_dataset,
+        device=device,
+        num_clients=num_clients,
+        epochs=epochs,
+        batch_size=batch_size,
+        lr=lr,
+        seed=seed,
+        num_parallels=num_parallels,
+        ipc_mode="storage",
+    )
+
+    cids = server.sample_clients()
+    downlink = server.downlink_package()
+
+    proc = Process(target=run_local_process, args=(trainer, downlink, cids))
+    proc.start()
+    assert proc.pid is not None
+
+    spawned_pids = []
+    timeout = 5
+    start_time = time.time()
+    while proc.is_alive():
+        spawned_pids = []
+        for child in psutil.Process(proc.pid).children(recursive=True):
+            spawned_pids.append(child.pid)
+        if len(spawned_pids) == num_parallels:
+            break
+        if time.time() - start_time > timeout:
+            pytest.fail(
+                f"Process did not spawn {len(spawned_pids)} processes within {timeout}s"
+            )
+    assert proc.is_alive()
+
+    os.kill(proc.pid, signal.SIGINT)
+
+    proc.join(timeout=5)
+    assert not proc.is_alive()
+
+    orphan_pids = []
+    for pid in spawned_pids:
+        if psutil.pid_exists(pid):
+            orphan_pids.append(pid)
+    assert len(orphan_pids) == 0
+
+
+def test_base_handler_and_thread_pool_trainer_integration(
+    model_selector, partitioned_dataset, device
+):
+    model_name = "dummy"
+    global_round = 2
+    num_clients = 3
+    sample_ratio = 1.0
+    epochs = 1
+    batch_size = 2
+    lr = 0.01
+    seed = 42
+    num_parallels = 2
+
+    server = FedAvgBaseServerHandler(
+        model_selector=model_selector,
+        model_name=model_name,
+        dataset=partitioned_dataset,
+        global_round=global_round,
+        num_clients=num_clients,
+        sample_ratio=sample_ratio,
+        device=device,
+        batch_size=batch_size,
+    )
+
+    trainer = FedAvgThreadPoolClientTrainer(
+        model_selector=model_selector,
+        model_name=model_name,
         dataset=partitioned_dataset,
         device=device,
         num_clients=num_clients,
@@ -188,13 +325,10 @@ def test_server_and_parallel_integration(
     assert server.if_stop() is True
 
 
-def run_local_process(trainer, downlink, cids):
-    with suppress(KeyboardInterrupt):
-        trainer.local_process(downlink, cids)
-
-
-def test_server_and_parallel_integration_keyboard_interrupt(
-    model_selector, partitioned_dataset, device, tmp_share_dir, tmp_state_dir
+def test_base_handler_and_thread_pool_trainer_integration_keyboard_interrupt(
+    model_selector,
+    partitioned_dataset,
+    device,
 ):
     model_name = "dummy"
     global_round = 1
@@ -206,7 +340,7 @@ def test_server_and_parallel_integration_keyboard_interrupt(
     seed = 42
     num_parallels = 10
 
-    server = FedAvgServerHandler(
+    server = FedAvgBaseServerHandler(
         model_selector=model_selector,
         model_name=model_name,
         dataset=partitioned_dataset,
@@ -217,11 +351,9 @@ def test_server_and_parallel_integration_keyboard_interrupt(
         batch_size=batch_size,
     )
 
-    trainer = FedAvgParallelClientTrainer(
+    trainer = FedAvgThreadPoolClientTrainer(
         model_selector=model_selector,
         model_name=model_name,
-        share_dir=tmp_share_dir,
-        state_dir=tmp_state_dir,
         dataset=partitioned_dataset,
         device=device,
         num_clients=num_clients,
@@ -239,26 +371,17 @@ def test_server_and_parallel_integration_keyboard_interrupt(
     proc.start()
     assert proc.pid is not None
 
-    spawned_pids = []
+    p = psutil.Process(proc.pid)
     timeout = 5
-    start_time = time.time()
-    while proc.is_alive():
-        spawned_pids = []
-        for child in psutil.Process(proc.pid).children(recursive=True):
-            spawned_pids.append(child.pid)
-        if len(spawned_pids) == num_parallels:
-            break
-        if time.time() - start_time > timeout:
-            raise AssertionError("Timeout reached while waiting for spawned processes.")
+    while p.num_threads() < num_parallels + 1:
+        if not p.is_running() or time.time() - p.create_time() > timeout:
+            pytest.fail(
+                f"Process did not spawn {num_parallels} threads within {timeout}s"
+            )
+        time.sleep(0.1)
     assert proc.is_alive()
 
     os.kill(proc.pid, signal.SIGINT)
 
     proc.join(timeout=5)
     assert not proc.is_alive()
-
-    orphan_pids = []
-    for pid in spawned_pids:
-        if psutil.pid_exists(pid):
-            orphan_pids.append(pid)
-    assert len(orphan_pids) == 0
